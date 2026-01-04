@@ -13,8 +13,6 @@ namespace memory {
  * deallocation by resetting the arena. This is useful for scenarios where
  * many small allocations are needed and can be freed all at once.
  * 
- * This Arena implementation complies with RAII principles. Future improvements 
- * could include alignment support and thread-safety mechanisms.
  */
 class Arena {
 public:
@@ -36,9 +34,6 @@ public:
 
     Arena(const Arena&) = delete;
     Arena& operator=(const Arena&) = delete;
-
-    Arena(Arena&& other) noexcept;
-    Arena& operator=(Arena&& other) noexcept;
 
     template<typename T, typename... Args>
     T* allocate(Args&&... args) {
