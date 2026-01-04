@@ -1,7 +1,5 @@
 #include "arena.h"
 
-#include <cstring>
-
 namespace memory {
 
 Arena::Arena(std::size_t capacity) : capacity_(capacity) {
