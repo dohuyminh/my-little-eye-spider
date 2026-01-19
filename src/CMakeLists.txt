@@ -2,6 +2,7 @@ find_package(llhttp REQUIRED)
 find_package(stduuid REQUIRED)
 
 add_subdirectory(memory)
+add_subdirectory(crawler)
 
 add_executable(
     main
