@@ -9,6 +9,7 @@ class Recipe(ConanFile):
     def requirements(self):
         self.requires("llhttp/9.3.0")
         self.requires("stduuid/1.2.3")
+        self.requires("concurrentqueue/1.0.4")
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.18]")

@@ -25,7 +25,13 @@ public:
         IBackSelector* backSelector
     );
 
-    
+    void insertToFrontQueue(const std::string& url);
+
+    std::optional<URL> popFront();
+
+    void insertToBackQueue(const std::vector<URL>& urls);
+
+    std::optional<URL> popBack();
 
 private:
 

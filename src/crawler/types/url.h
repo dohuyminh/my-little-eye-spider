@@ -8,6 +8,8 @@ namespace crawler {
 class URL {
 public:
 
+    URL() = default;
+
     URL(std::string&& url, double priority) noexcept;
     
     const std::string& url() const noexcept {
