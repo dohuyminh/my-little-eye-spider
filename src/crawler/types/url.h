@@ -1,7 +1,6 @@
 #pragma once
 
 #include <string>
-#include <cstddef>
 
 namespace crawler {
 
@@ -12,6 +11,8 @@ public:
 
     URL(std::string&& url, double priority) noexcept;
     
+    URL(const std::string& url, double priority) noexcept;
+
     const std::string& url() const noexcept {
         return url_; 
     }

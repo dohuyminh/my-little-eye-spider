@@ -4,6 +4,12 @@ add_library(
         frontier/frontier.cpp
         frontier/front_queues.cpp 
         frontier/back_queues.cpp
+        frontier/frontier_builder.cpp
+
+        frontier/services_implement/sample_front_select.cpp
+        frontier/services_implement/sample_prioritizer.cpp
+        frontier/services_implement/sample_router.cpp
+        frontier/services_implement/sample_back_select.cpp
 )
 
 target_link_libraries(

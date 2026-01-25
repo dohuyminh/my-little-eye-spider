@@ -1,6 +1,5 @@
 #pragma once
-
-#include "types/url.h"
+#include <string>
 
 namespace crawler {
 
