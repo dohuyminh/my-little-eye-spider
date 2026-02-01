@@ -9,7 +9,11 @@ namespace component {
 
 FrontQueues::FrontQueues(std::size_t n_queues) :
     frontQueues_(n_queues) 
-{}
+{
+    if (n_queues == 0) {
+        throw std::invalid_argument("FrontQueues must have at least 1 bucket");
+    }
+}
 
 std::optional<URL> FrontQueues::selectAndPop(std::size_t queueIndex) {
     if (queueIndex >= frontQueues_.size()) {

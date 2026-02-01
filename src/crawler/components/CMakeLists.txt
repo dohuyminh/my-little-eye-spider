@@ -6,10 +6,15 @@ add_library(
         frontier/back_queues.cpp
         frontier/frontier_builder.cpp
 
-        frontier/services_implement/sample_front_select.cpp
-        frontier/services_implement/sample_prioritizer.cpp
-        frontier/services_implement/sample_router.cpp
-        frontier/services_implement/sample_back_select.cpp
+        frontier/sample/sample_front_select.cpp
+        frontier/sample/sample_prioritizer.cpp
+        frontier/sample/sample_router.cpp
+        frontier/sample/sample_back_select.cpp
+
+        frontier/round_robin/rr_front_select.cpp
+        frontier/round_robin/rr_prioritizer.cpp
+        frontier/round_robin/rr_router.cpp
+        frontier/round_robin/rr_back_select.cpp
 )
 
 target_link_libraries(

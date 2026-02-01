@@ -44,6 +44,7 @@ void FrontierBuilder::setBackSelector(IBackSelector* selector) {
     if (!selector) {
         throw std::invalid_argument("Back Selector must be a valid heap-allocated object, to be owned by the frontier");
     }
+    backSelector_ = selector;
 }
 
 Frontier FrontierBuilder::get() {
