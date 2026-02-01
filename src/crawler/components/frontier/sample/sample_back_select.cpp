@@ -2,9 +2,9 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
-std::optional<URL> SampleBackSelector::extract(BackQueues& backQueues) {
+std::optional<types::URL> SampleBackSelector::extract(BackQueues& backQueues) {
     return backQueues.selectAndPop(0);
 }
 

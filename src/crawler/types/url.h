@@ -7,6 +7,8 @@
 
 namespace crawler {
 
+namespace types {
+
 class URL {
 public:
 
@@ -68,5 +70,7 @@ private:
     std::unordered_map<std::string, std::string> queryParams_;
     std::string fragment_;
 };
+
+}
 
 }

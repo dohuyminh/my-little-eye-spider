@@ -6,7 +6,7 @@
 
 namespace crawler {
 
-using namespace component;
+using namespace components;
 
 class Spider {
 public:

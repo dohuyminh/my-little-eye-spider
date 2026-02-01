@@ -5,13 +5,13 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class RoundRobinPrioritizer : public IFrontPrioritizer {
 public:
     RoundRobinPrioritizer(std::size_t numQueues);
 
-    std::pair<URL, std::size_t> selectQueue(const std::string& url) override;
+    std::pair<types::URL, std::size_t> selectQueue(const std::string& url) override;
     
 private:
     std::size_t numQueues_;

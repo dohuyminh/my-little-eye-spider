@@ -5,6 +5,8 @@ using namespace service::url;
 
 namespace crawler {
 
+namespace types {
+
 URL::URL(std::string&& url) noexcept
     : url_(std::move(url))
 {
@@ -35,6 +37,8 @@ URL::URL(const std::string& url) noexcept
         queryParams_ = std::move(result.queryParams);
         fragment_ = std::move(result.fragment);
     }
+}
+
 }
 
 }

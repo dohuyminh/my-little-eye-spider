@@ -4,11 +4,11 @@
 
 namespace crawler {
     
-namespace component {
+namespace components {
 
 class IBackSelector {
 public:
-    virtual std::optional<URL> extract(BackQueues& backQueues) = 0;
+    virtual std::optional<types::URL> extract(BackQueues& backQueues) = 0;
     virtual ~IBackSelector() = default;
 };
 

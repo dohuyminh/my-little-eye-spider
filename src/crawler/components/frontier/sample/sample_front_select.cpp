@@ -2,9 +2,9 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
-std::optional<URL> SampleFrontSelector::extract(FrontQueues& frontQueues) {
+std::optional<types::URL> SampleFrontSelector::extract(FrontQueues& frontQueues) {
     return frontQueues.selectAndPop(0);
 }
 

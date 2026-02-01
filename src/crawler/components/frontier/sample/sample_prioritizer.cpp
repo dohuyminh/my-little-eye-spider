@@ -2,10 +2,10 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
-std::pair<URL, std::size_t> SamplePrioritizer::selectQueue(const std::string& url) {
-    return {URL(url), 0};
+std::pair<types::URL, std::size_t> SamplePrioritizer::selectQueue(const std::string& url) {
+    return {types::URL(url), 0};
 }
 
 }

@@ -6,7 +6,7 @@
 
 namespace crawler {
 
-namespace type {
+namespace types {
 
 class Runnable {
 public:

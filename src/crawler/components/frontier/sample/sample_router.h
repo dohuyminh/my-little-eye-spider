@@ -4,11 +4,11 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class SampleRouter : public IBackRouter {
 public:
-    std::size_t routeURL(const URL& url) override;
+    std::size_t routeURL(const types::URL& url) override;
 };
 
 }

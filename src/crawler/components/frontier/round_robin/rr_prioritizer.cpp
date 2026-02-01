@@ -2,13 +2,13 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 RoundRobinPrioritizer::RoundRobinPrioritizer(std::size_t numQueues) : 
     numQueues_(numQueues) 
 {}
 
-std::pair<URL, std::size_t> RoundRobinPrioritizer::selectQueue(const std::string& url) {
+std::pair<types::URL, std::size_t> RoundRobinPrioritizer::selectQueue(const std::string& url) {
     std::size_t selectedQueue;
 
     {
@@ -17,7 +17,7 @@ std::pair<URL, std::size_t> RoundRobinPrioritizer::selectQueue(const std::string
         pointer_ = (pointer_ + 1) % numQueues_;
     }
 
-    return { URL(url), selectedQueue };
+    return { types::URL(url), selectedQueue };
 }
 
 }

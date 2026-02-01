@@ -10,7 +10,7 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class BackQueues {
 public:
@@ -24,7 +24,7 @@ public:
      * @param queueIndex The bucket to dequeue from
      * @return URL if available, empty optional if bucket empty
      */
-    std::optional<URL> selectAndPop(std::size_t queueIndex);
+    std::optional<types::URL> selectAndPop(std::size_t queueIndex);
 
     /**
      * Lock-free enqueue to specified bucket.
@@ -33,8 +33,7 @@ public:
      * @param url The URL to insert
      * @param queueIndex The bucket to insert into
      */
-    void insert(const URL& url, std::size_t queueIndex);
-
+    void insert(const types::URL& url, std::size_t queueIndex);
     /**
      * Lock-free move enqueue to specified bucket.
      * Optimized: Uses move semantics to avoid copies.
@@ -42,7 +41,7 @@ public:
      * @param url The URL to insert (moved)
      * @param queueIndex The bucket to insert into
      */
-    void insert(URL&& url, std::size_t queueIndex);
+    void insert(types::URL&& url, std::size_t queueIndex);
 
     std::size_t numQueues() const noexcept {
         return backQueues_.size();
@@ -66,7 +65,7 @@ private:
      * - Zero-contention: No mutexes, uses atomic operations internally
      */
     struct DomainBucket {
-        moodycamel::ConcurrentQueue<URL> data;
+        moodycamel::ConcurrentQueue<types::URL> data;
     };
     
     std::vector<DomainBucket> backQueues_;

@@ -5,13 +5,13 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class RoundRobinBackSelector : public IBackSelector {
 public:
     RoundRobinBackSelector() = default;    
 
-    std::optional<URL> extract(BackQueues& backQueues) override;
+    std::optional<types::URL> extract(BackQueues& backQueues) override;
 
 private:
     std::size_t pointer_{ 0 };

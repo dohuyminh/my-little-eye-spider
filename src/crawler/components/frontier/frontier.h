@@ -14,13 +14,13 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
-class Frontier : public type::Runnable {
+class Frontier : public types::Runnable {
 public:
 
     Frontier(
-        std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue,
+        std::shared_ptr<service::pattern::SharedQueue<types::URL>> sharedURLQueue,
         std::size_t numFrontQueues,
         std::size_t numBackQueues,
         IFrontPrioritizer* prioritizer, 
@@ -31,11 +31,11 @@ public:
 
     void insertToFrontQueue(const std::string& url);
 
-    std::optional<URL> popFront();
+    std::optional<types::URL> popFront();
 
-    void insertToBackQueue(const std::vector<URL>& urls);
+    void insertToBackQueue(const std::vector<types::URL>& urls);
 
-    std::optional<URL> popBack();
+    std::optional<types::URL> popBack();
 
     void runImpl() override;
 
@@ -58,7 +58,7 @@ private:
     std::unique_ptr<IBackSelector> backSelector_;
 
     // Frontier is the producer of back queue URLs, to be consumed by worker threads
-    std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue_;
+    std::shared_ptr<service::pattern::SharedQueue<types::URL>> sharedURLQueue_;
 };
 
 }

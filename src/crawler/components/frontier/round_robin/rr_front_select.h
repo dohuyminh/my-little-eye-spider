@@ -6,13 +6,13 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class RoundRobinFrontSelector : public IFrontSelector {
 public:
     RoundRobinFrontSelector() = default;    
 
-    std::optional<URL> extract(FrontQueues& frontQueues) override;
+    std::optional<types::URL> extract(FrontQueues& frontQueues) override;
 
 private:
     std::size_t pointer_{ 0 };

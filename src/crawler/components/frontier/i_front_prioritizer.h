@@ -5,11 +5,11 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class IFrontPrioritizer {
 public:
-    virtual std::pair<URL, std::size_t> selectQueue(const std::string& url) = 0;
+    virtual std::pair<types::URL, std::size_t> selectQueue(const std::string& url) = 0;
     virtual ~IFrontPrioritizer() = default;
 };
 

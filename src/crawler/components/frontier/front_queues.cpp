@@ -5,7 +5,7 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 FrontQueues::FrontQueues(std::size_t n_queues) :
     frontQueues_(n_queues) 
@@ -15,12 +15,12 @@ FrontQueues::FrontQueues(std::size_t n_queues) :
     }
 }
 
-std::optional<URL> FrontQueues::selectAndPop(std::size_t queueIndex) {
+std::optional<types::URL> FrontQueues::selectAndPop(std::size_t queueIndex) {
     if (queueIndex >= frontQueues_.size()) {
         throw std::out_of_range(std::format("Accessing the {}th queue from a set of {} queues", queueIndex, frontQueues_.size()));
     }
 
-    URL url;
+    types::URL url;
     
     // Lock-free dequeue: O(1) time complexity
     // No mutexes: Multiple threads can dequeue simultaneously
@@ -32,7 +32,7 @@ std::optional<URL> FrontQueues::selectAndPop(std::size_t queueIndex) {
     return {};
 }
 
-void FrontQueues::insert(const URL& url, std::size_t queueIndex) {
+void FrontQueues::insert(const types::URL& url, std::size_t queueIndex) {
     if (queueIndex >= frontQueues_.size()) {
         throw std::out_of_range(std::format("Accessing the {}th queue from a set of {} queues", queueIndex, frontQueues_.size()));
     }
@@ -43,7 +43,7 @@ void FrontQueues::insert(const URL& url, std::size_t queueIndex) {
     frontQueues_[queueIndex].data.enqueue(url);
 }
 
-void FrontQueues::insert(URL&& url, std::size_t queueIndex) {
+void FrontQueues::insert(types::URL&& url, std::size_t queueIndex) {
     if (queueIndex >= frontQueues_.size()) {
         throw std::out_of_range(std::format("Accessing the {}th queue from a set of {} queues", queueIndex, frontQueues_.size()));
     }

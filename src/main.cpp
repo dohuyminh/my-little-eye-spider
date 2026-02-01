@@ -14,7 +14,7 @@ using namespace crawler;
 using namespace service::url;
 
 // Global flag for signal handling
-static std::atomic<component::Frontier*> g_frontier(nullptr);
+static std::atomic<components::Frontier*> g_frontier(nullptr);
 static std::atomic<bool> g_stopRequested(false);
 
 void signalHandler(int signum) {
@@ -27,18 +27,18 @@ void signalHandler(int signum) {
 int main(int argc, char const *argv[])
 {	
 
-	component::FrontierBuilder builder;
-	auto sharedURLQueue = std::make_shared<service::pattern::SharedQueue<URL>>();
+	components::FrontierBuilder builder;
+	auto sharedURLQueue = std::make_shared<service::pattern::SharedQueue<crawler::types::URL>>();
 
 	builder.setSharedURLQueue(sharedURLQueue);
 	builder.setFrontQueuesSize(10);
 	builder.setBackQueuesSize(10);
-	builder.setPrioritizer(new component::SamplePrioritizer());
-	builder.setFrontSelector(new component::SampleFrontSelector());
-	builder.setRouter(new component::SampleRouter());
-	builder.setBackSelector(new component::SampleBackSelector());
+	builder.setPrioritizer(new components::SamplePrioritizer());
+	builder.setFrontSelector(new components::SampleFrontSelector());
+	builder.setRouter(new components::SampleRouter());
+	builder.setBackSelector(new components::SampleBackSelector());
 
-	std::unique_ptr<component::Frontier> frontier = builder.get();
+	std::unique_ptr<components::Frontier> frontier = builder.get();
 	
 	// Register signal handler for Ctrl+C (SIGINT)
 	g_frontier.store(frontier.get());
@@ -62,7 +62,7 @@ int main(int argc, char const *argv[])
 	std::vector<std::thread> threads;
 	for (auto i{ 0 }; i < 10; ++i) {
 		threads.emplace_back([&]() {
-			std::optional<URL> url = sharedURLQueue->pop();
+			std::optional<crawler::types::URL> url = sharedURLQueue->pop();
 			{
 				std::unique_lock<std::mutex> lock(m);
 				if (url.has_value()) {

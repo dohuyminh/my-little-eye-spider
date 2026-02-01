@@ -2,10 +2,10 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 Frontier::Frontier(
-        std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue,
+        std::shared_ptr<service::pattern::SharedQueue<types::URL>> sharedURLQueue,
         std::size_t numFrontQueues,
         std::size_t numBackQueues,
         IFrontPrioritizer* prioritizer, 
@@ -27,18 +27,18 @@ void Frontier::insertToFrontQueue(const std::string& url) {
     frontQueues_.insert(urlWithPriority, queueIndex);
 }
 
-void Frontier::insertToBackQueue(const std::vector<URL>& urls) {
-    for (const URL& url: urls) {
+void Frontier::insertToBackQueue(const std::vector<types::URL>& urls) {
+    for (const types::URL& url: urls) {
         std::size_t backQueueIndex = router_->routeURL(url);
         backQueues_.insert(url, backQueueIndex);
     }
 }
 
-std::optional<URL> Frontier::popFront() {
+std::optional<types::URL> Frontier::popFront() {
     return frontSelector_->extract(frontQueues_);
 }
 
-std::optional<URL> Frontier::popBack() {
+std::optional<types::URL> Frontier::popBack() {
     return backSelector_->extract(backQueues_);
 }
 
@@ -46,17 +46,17 @@ void Frontier::runImpl() {
     // Process front queues to back queues
     auto frontURLOpt = popFront();
     if (frontURLOpt.has_value()) {
-        URL frontURL = frontURLOpt.value();
+        types::URL frontURL = frontURLOpt.value();
         
         // Route to back queue(s)
-        std::vector<URL> routedURLs{ frontURL };
+        std::vector<types::URL> routedURLs{ frontURL };
         insertToBackQueue(routedURLs);
     }
 
     // Process back queues to shared queue for workers
     auto backURLOpt = popBack();
     if (backURLOpt.has_value()) {
-        URL backURL = backURLOpt.value();
+        types::URL backURL = backURLOpt.value();
         sharedURLQueue_->push(backURL);
     }
 }

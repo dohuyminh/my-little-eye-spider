@@ -2,9 +2,9 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
-std::size_t SampleRouter::routeURL(const URL& url) {
+std::size_t SampleRouter::routeURL(const types::URL& url) {
     return 0;
 }
 

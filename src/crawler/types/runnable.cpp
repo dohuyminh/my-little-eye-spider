@@ -2,7 +2,7 @@
 
 namespace crawler {
 
-namespace type {
+namespace types {
 
 void Runnable::run() {
     // mark as running

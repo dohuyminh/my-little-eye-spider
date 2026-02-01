@@ -4,11 +4,11 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class SampleBackSelector : public IBackSelector {
 public:
-    std::optional<URL> extract(BackQueues& backQueues) override;
+    std::optional<types::URL> extract(BackQueues& backQueues) override;
 };
 
 }

@@ -3,7 +3,7 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class IURLMapper {
 public:

@@ -2,9 +2,9 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
-std::optional<URL> RoundRobinBackSelector::extract(BackQueues& backQueues) {
+std::optional<types::URL> RoundRobinBackSelector::extract(BackQueues& backQueues) {
     std::unique_lock<std::mutex> lock(mutex_);
 
     const std::size_t nQueues = backQueues.numQueues();

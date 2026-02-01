@@ -5,9 +5,13 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class RoundRobinBackRouter : public IBackRouter {
+public:
+    RoundRobinBackRouter() = default;    
+
+    std::size_t routeURL(const types::URL& url) override;
 
 private:
     std::size_t pointer_{ 0 };

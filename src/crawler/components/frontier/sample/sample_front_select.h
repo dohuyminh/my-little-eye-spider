@@ -4,11 +4,11 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class SampleFrontSelector : public IFrontSelector {
 public:
-    std::optional<URL> extract(FrontQueues& frontQueues) override;
+    std::optional<types::URL> extract(FrontQueues& frontQueues) override;
 };
 
 }

@@ -4,11 +4,11 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class IBackRouter {
 public:
-    virtual std::size_t routeURL(const URL& url) = 0;
+    virtual std::size_t routeURL(const types::URL& url) = 0;
     virtual ~IBackRouter() = default;
 };
 

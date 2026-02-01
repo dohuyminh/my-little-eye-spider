@@ -4,7 +4,7 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class FrontierBuilder {
 public:
@@ -15,7 +15,7 @@ public:
 
     void setBackQueuesSize(std::size_t backQueueSize);
 
-    void setSharedURLQueue(std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue);
+    void setSharedURLQueue(std::shared_ptr<service::pattern::SharedQueue<types::URL>> sharedURLQueue);
 
     void setPrioritizer(IFrontPrioritizer* prioritizer);
 
@@ -57,7 +57,7 @@ public:
 private:
     std::size_t frontQueuesSize_{ 0 };
     std::size_t backQueuesSize_{ 0 };
-    std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue_{ nullptr };
+    std::shared_ptr<service::pattern::SharedQueue<types::URL>> sharedURLQueue_{ nullptr };
     IFrontPrioritizer* prioritizer_{ nullptr };
     IFrontSelector* frontSelector_{ nullptr };
     IBackRouter* router_{ nullptr };

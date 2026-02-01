@@ -11,19 +11,18 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class FrontQueues {
 public:
 
     FrontQueues(std::size_t nQueues);
 
-    std::optional<URL> selectAndPop(std::size_t queueIndex);
+    std::optional<types::URL> selectAndPop(std::size_t queueIndex);
 
-    void insert(const URL& url, std::size_t queueIndex);
+    void insert(const types::URL& url, std::size_t queueIndex);
 
-    void insert(URL&& url, std::size_t queueIndex);
-
+    void insert(types::URL&& url, std::size_t queueIndex);
     std::size_t numQueues() const noexcept {
         return frontQueues_.size();
     }
@@ -41,7 +40,7 @@ public:
 private:
     
     struct QueueBucket {
-        moodycamel::ConcurrentQueue<URL> data;
+        moodycamel::ConcurrentQueue<types::URL> data;
     };
 
     std::vector<QueueBucket> frontQueues_;

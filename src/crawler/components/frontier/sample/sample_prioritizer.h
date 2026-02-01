@@ -4,11 +4,11 @@
 
 namespace crawler {
 
-namespace component {
+namespace components {
 
 class SamplePrioritizer : public IFrontPrioritizer {
 public:
-    std::pair<URL, std::size_t> selectQueue(const std::string& url) override;
+    std::pair<types::URL, std::size_t> selectQueue(const std::string& url) override;
 };
 
 }
