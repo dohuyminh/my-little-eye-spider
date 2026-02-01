@@ -5,7 +5,7 @@ namespace crawler {
 
 namespace components {
 
-void FrontierBuilder::setSharedURLQueue(std::shared_ptr<service::pattern::SharedQueue<types::URL>> sharedURLQueue) {
+void FrontierBuilder::setSharedURLQueue(std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue) {
     if (!sharedURLQueue) {
         throw std::invalid_argument("Shared URL Queue must be a valid shared pointer to a SharedQueue<types::URL> object");
     }

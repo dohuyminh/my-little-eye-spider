@@ -4,7 +4,7 @@
 #include "idn2.h"
 #include "libpsl.h"
 
-namespace service {
+namespace services {
 
 namespace url {
 

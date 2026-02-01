@@ -1,7 +1,7 @@
 #include "url.h"
 #include "services/url.h"
 
-using namespace service::url;
+using namespace services::url;
 
 namespace crawler {
 

@@ -11,7 +11,7 @@
 #include "services/producer_consumer.h"
 
 using namespace crawler;
-using namespace service::url;
+using namespace services::url;
 
 // Global flag for signal handling
 static std::atomic<components::Frontier*> g_frontier(nullptr);
@@ -28,7 +28,7 @@ int main(int argc, char const *argv[])
 {	
 
 	components::FrontierBuilder builder;
-	auto sharedURLQueue = std::make_shared<service::pattern::SharedQueue<crawler::types::URL>>();
+	auto sharedURLQueue = std::make_shared<services::pattern::SharedQueue<crawler::types::URL>>();
 
 	builder.setSharedURLQueue(sharedURLQueue);
 	builder.setFrontQueuesSize(10);

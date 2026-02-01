@@ -20,7 +20,7 @@ class Frontier : public types::Runnable {
 public:
 
     Frontier(
-        std::shared_ptr<service::pattern::SharedQueue<types::URL>> sharedURLQueue,
+        std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue,
         std::size_t numFrontQueues,
         std::size_t numBackQueues,
         IFrontPrioritizer* prioritizer, 
@@ -58,7 +58,7 @@ private:
     std::unique_ptr<IBackSelector> backSelector_;
 
     // Frontier is the producer of back queue URLs, to be consumed by worker threads
-    std::shared_ptr<service::pattern::SharedQueue<types::URL>> sharedURLQueue_;
+    std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue_;
 };
 
 }

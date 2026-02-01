@@ -5,7 +5,7 @@ namespace crawler {
 namespace components {
 
 Frontier::Frontier(
-        std::shared_ptr<service::pattern::SharedQueue<types::URL>> sharedURLQueue,
+        std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue,
         std::size_t numFrontQueues,
         std::size_t numBackQueues,
         IFrontPrioritizer* prioritizer, 
