@@ -7,16 +7,20 @@
 #include "i_back_router.h"
 #include "i_back_selector.h"
 
+#include "services/producer_consumer.h"
+#include "types/runnable.h"
+
 #include <memory>
 
 namespace crawler {
 
 namespace component {
 
-class Frontier {
+class Frontier : public type::Runnable {
 public:
 
     Frontier(
+        std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue,
         std::size_t numFrontQueues,
         std::size_t numBackQueues,
         IFrontPrioritizer* prioritizer, 
@@ -32,6 +36,8 @@ public:
     void insertToBackQueue(const std::vector<URL>& urls);
 
     std::optional<URL> popBack();
+
+    void runImpl() override;
 
 private:
 
@@ -50,6 +56,9 @@ private:
 
     // for rate-limiting and URL extraction (results to be handed to)
     std::unique_ptr<IBackSelector> backSelector_;
+
+    // Frontier is the producer of back queue URLs, to be consumed by worker threads
+    std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue_;
 };
 
 }

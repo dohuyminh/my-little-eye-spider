@@ -19,8 +19,9 @@ add_library(
 
 target_link_libraries(
     components
-    types
-    concurrentqueue::concurrentqueue
+        types
+        concurrentqueue::concurrentqueue
+        services
 )
 
 target_include_directories(components PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

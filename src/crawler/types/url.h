@@ -2,6 +2,8 @@
 
 #include <string>
 #include <unordered_map>
+#include <vector>   
+#include <optional>
 
 namespace crawler {
 
@@ -16,45 +18,55 @@ public:
 
     const std::string& url() const noexcept {
         return url_; 
+    }   
+
+    const std::string& scheme() const noexcept {
+        return scheme_;
     }
 
-    // std::string scheme() const noexcept {
-    //     return std::string(scheme_);
-    // }
+    const std::vector<std::string>& subdomains() const noexcept {
+        return subdomains_;
+    }
 
-    // std::string authority() const noexcept {
-    //     return std::string(authority_);
-    // }
+    const std::string& domain() const noexcept {
+        return domain_;
+    }
 
-    // std::string path() const noexcept {
-    //     return std::string(path_);
-    // }
+    const std::string& port() const noexcept {
+        return port_;
+    }
 
-    // std::optional<std::string> query(const std::string& key) const noexcept {
-    //     auto it = queryParams_.find(key);
-    //     if (it != queryParams_.end()) {
-    //         return it->second;
-    //     }
-    //     return std::nullopt;
-    // }
+    const std::string& path() const noexcept {
+        return path_;
+    }
 
-    // std::string fragment() const noexcept {
-    //     return std::string(fragment_);
-    // }
+    std::optional<std::string> query(const std::string& key) const noexcept {
+        auto it = queryParams_.find(key);
+        if (it != queryParams_.end()) {
+            return it->second;
+        }
+        return std::nullopt;
+    }
+
+    const std::string& fragment() const noexcept {
+        return fragment_;
+    }
 
     std::string to_string() const noexcept {
         return url_;
     }
 
 private:
+    
     std::string url_;
 
-    // std::string_view scheme_;
-    // std::string_view authority_;
-    // std::string_view path_;
-    // std::unordered_map<std::string, std::string> queryParams_;
-    // std::string_view fragment_;
-
+    std::string scheme_;
+    std::vector<std::string> subdomains_;
+    std::string domain_;
+    std::string port_;
+    std::string path_;
+    std::unordered_map<std::string, std::string> queryParams_;
+    std::string fragment_;
 };
 
 }

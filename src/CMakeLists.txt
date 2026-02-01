@@ -3,6 +3,7 @@ find_package(stduuid REQUIRED)
 find_package(concurrentqueue REQUIRED)
 find_package(re2 REQUIRED)
 find_package(libidn2 REQUIRED)
+find_package(libpsl REQUIRED)
 
 add_subdirectory(memory)
 add_subdirectory(crawler)
@@ -18,6 +19,7 @@ target_link_libraries(
     memory
     crawler
     services
+    types
     llhttp::llhttp
     stduuid::stduuid
 )

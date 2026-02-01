@@ -1,6 +1,5 @@
 #pragma once
 
-#include "components/frontier/i_front_selector.h"
 #include "frontier.h"
 
 namespace crawler {
@@ -16,6 +15,8 @@ public:
 
     void setBackQueuesSize(std::size_t backQueueSize);
 
+    void setSharedURLQueue(std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue);
+
     void setPrioritizer(IFrontPrioritizer* prioritizer);
 
     void setFrontSelector(IFrontSelector* selector);
@@ -27,6 +28,7 @@ public:
     bool canBuild() const noexcept {
         return frontQueuesSize_ > 0 && 
                 backQueuesSize_ > 0 && 
+                sharedURLQueue_ != nullptr &&
                 prioritizer_ && 
                 frontSelector_ && 
                 router_ && 
@@ -35,6 +37,7 @@ public:
 
     void reset() noexcept {
         frontQueuesSize_ = backQueuesSize_ = 0;
+        sharedURLQueue_ = nullptr;
         delete prioritizer_;
         prioritizer_ = nullptr;
         delete frontSelector_;
@@ -45,7 +48,7 @@ public:
         backSelector_ = nullptr;
     }
 
-    Frontier get();
+    std::unique_ptr<Frontier> get();
 
     ~FrontierBuilder() {
         reset();
@@ -54,6 +57,7 @@ public:
 private:
     std::size_t frontQueuesSize_{ 0 };
     std::size_t backQueuesSize_{ 0 };
+    std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue_{ nullptr };
     IFrontPrioritizer* prioritizer_{ nullptr };
     IFrontSelector* frontSelector_{ nullptr };
     IBackRouter* router_{ nullptr };

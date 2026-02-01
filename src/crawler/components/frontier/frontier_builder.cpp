@@ -5,6 +5,13 @@ namespace crawler {
 
 namespace component {
 
+void FrontierBuilder::setSharedURLQueue(std::shared_ptr<service::pattern::SharedQueue<URL>> sharedURLQueue) {
+    if (!sharedURLQueue) {
+        throw std::invalid_argument("Shared URL Queue must be a valid shared pointer to a SharedQueue<URL> object");
+    }
+    sharedURLQueue_ = sharedURLQueue;
+}
+
 void FrontierBuilder::setFrontQueuesSize(std::size_t frontQueuesSize) {
     if (frontQueuesSize == 0) {
         throw std::invalid_argument("Frontier initialization requires at least 1 queue at the front");
@@ -47,17 +54,19 @@ void FrontierBuilder::setBackSelector(IBackSelector* selector) {
     backSelector_ = selector;
 }
 
-Frontier FrontierBuilder::get() {
+std::unique_ptr<Frontier> FrontierBuilder::get() {
     if (!canBuild()) {
         throw std::runtime_error("Not every component of frontier has been provided");
     }
 
-    Frontier frontier(
+    auto frontier = std::make_unique<Frontier>(
+        sharedURLQueue_,
         frontQueuesSize_, backQueuesSize_, 
         prioritizer_, frontSelector_, 
         router_, backSelector_
     );
 
+    sharedURLQueue_ = nullptr;
     frontQueuesSize_ = backQueuesSize_ = 0;
     prioritizer_ = nullptr; 
     frontSelector_ = nullptr; 
