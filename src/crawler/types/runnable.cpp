@@ -5,35 +5,30 @@ namespace crawler {
 namespace types {
 
 void Runnable::run() {
-    // mark as running
-    {
-        std::unique_lock<std::mutex> lock(runMutex_);
-        isRunning_ = true;
+    
+    // Atomic check-and-set: only run if not already running
+    bool expected = false;
+    if (!isRunning_.compare_exchange_strong(expected, true)) {
+        return;  // Already running
     }
 
-    // create thread to run implementation
+    // Create thread to run implementation
     eventLoopThread_ = std::thread([this]() {
-        while (true) {
+        while (isRunning_.load()) {
             runImpl();
-
-            // check if should continue running
-            {
-                std::unique_lock<std::mutex> lock(runMutex_);
-                if (!isRunning_) {
-                    break;
-                }
-            }
+            
+            // Small sleep to prevent busy-waiting and allow graceful shutdown
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
         }
     });
 }
 
 void Runnable::stop() noexcept {
-    {
-        std::unique_lock<std::mutex> lock(runMutex_);
-        isRunning_ = false;
+    isRunning_.store(false);
+    
+    if (eventLoopThread_.joinable()) {
+        eventLoopThread_.join();
     }
-    runCv_.notify_all();
-    eventLoopThread_.join();
 }
 
 }

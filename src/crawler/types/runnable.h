@@ -1,7 +1,6 @@
 #pragma once
 
-#include <mutex>
-#include <condition_variable>
+#include <atomic>
 #include <thread>
 
 namespace crawler {
@@ -16,7 +15,7 @@ public:
     virtual void runImpl() = 0;
 
     bool isRunning() const noexcept {
-        return isRunning_;
+        return isRunning_.load();
     }
 
     void stop() noexcept;
@@ -25,9 +24,7 @@ public:
 
 private:
     std::thread eventLoopThread_;
-    bool isRunning_{ false };
-    std::mutex runMutex_;
-    std::condition_variable runCv_;
+    std::atomic<bool> isRunning_{ false };
 };
 
 }
