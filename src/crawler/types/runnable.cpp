@@ -6,26 +6,42 @@ namespace types {
 
 void Runnable::run() {
     
-    // Atomic check-and-set: only run if not already running
-    bool expected = false;
-    if (!isRunning_.compare_exchange_strong(expected, true)) {
-        return;  // Already running
+    // only start if not already running
+    if (isRunning_) {
+        return;
+    }
+
+    {
+        std::unique_lock<std::mutex> lock(runMutex_);
+        isRunning_ = true;
     }
 
     // Create thread to run implementation
     eventLoopThread_ = std::thread([this]() {
-        while (isRunning_.load()) {
+        while (true) {
+            // Call the actual implementation
             runImpl();
             
-            // Small sleep to prevent busy-waiting and allow graceful shutdown
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            {
+                // Lock to check running state
+                std::unique_lock<std::mutex> lock(runMutex_);
+                if (!isRunning_) {
+                    break;
+                }
+            }
         }
     });
 }
 
 void Runnable::stop() noexcept {
-    isRunning_.store(false);
-    
+    {
+        std::unique_lock<std::mutex> lock(runMutex_);
+        if (!isRunning_) {
+            return;
+        }
+        isRunning_ = false;
+    }
+
     if (eventLoopThread_.joinable()) {
         eventLoopThread_.join();
     }

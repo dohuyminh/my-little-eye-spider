@@ -2,6 +2,7 @@
 
 #include <atomic>
 #include <thread>
+#include <mutex>
 
 namespace crawler {
 
@@ -15,7 +16,7 @@ public:
     virtual void runImpl() = 0;
 
     bool isRunning() const noexcept {
-        return isRunning_.load();
+        return isRunning_;
     }
 
     void stop() noexcept;
@@ -24,7 +25,9 @@ public:
 
 private:
     std::thread eventLoopThread_;
-    std::atomic<bool> isRunning_{ false };
+    std::mutex runMutex_;
+    bool isRunning_{ false };
+
 };
 
 }
