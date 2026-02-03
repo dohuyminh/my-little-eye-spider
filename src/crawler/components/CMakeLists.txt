@@ -1,0 +1,27 @@
+add_library(
+    components
+    STATIC
+        frontier/frontier.cpp
+        frontier/front_queues.cpp 
+        frontier/back_queues.cpp
+        frontier/frontier_builder.cpp
+
+        frontier/sample/sample_front_select.cpp
+        frontier/sample/sample_prioritizer.cpp
+        frontier/sample/sample_router.cpp
+        frontier/sample/sample_back_select.cpp
+
+        frontier/round_robin/rr_front_select.cpp
+        frontier/round_robin/rr_prioritizer.cpp
+        frontier/round_robin/rr_router.cpp
+        frontier/round_robin/rr_back_select.cpp
+)
+
+target_link_libraries(
+    components
+        types
+        concurrentqueue::concurrentqueue
+        services
+)
+
+target_include_directories(components PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
