@@ -25,8 +25,7 @@ void signalHandler(int signum) {
     }
 }
 
-int main(int argc, char const *argv[])
-{	
+int main() {	
 
 	components::FrontierBuilder builder;
 	auto sharedURLQueue = std::make_shared<services::pattern::SharedQueue<crawler::types::URL>>();
