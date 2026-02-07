@@ -3,5 +3,6 @@
 .cache
 build
 diagrams
+docs
 CMakeUserPresets.json
 debug.sh

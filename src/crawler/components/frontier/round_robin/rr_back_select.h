@@ -12,6 +12,7 @@ public:
     RoundRobinBackSelector() = default;    
 
     std::optional<types::URL> extract(BackQueues& backQueues) override;
+    std::vector<types::URL> extractBatch(BackQueues& backQueues, std::size_t maxCount) override;
 
 private:
     std::size_t pointer_{ 0 };

@@ -9,11 +9,12 @@ namespace components {
 
 class RoundRobinBackRouter : public IBackRouter {
 public:
-    RoundRobinBackRouter() = default;    
+    RoundRobinBackRouter(std::size_t numQueues);    
 
     std::size_t routeURL(const types::URL& url) override;
 
 private:
+    std::size_t numQueues_;
     std::size_t pointer_{ 0 };
 
     std::mutex mutex_;

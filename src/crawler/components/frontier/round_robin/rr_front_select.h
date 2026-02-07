@@ -13,6 +13,7 @@ public:
     RoundRobinFrontSelector() = default;    
 
     std::optional<types::URL> extract(FrontQueues& frontQueues) override;
+    std::vector<types::URL> extractBatch(FrontQueues& frontQueues, std::size_t maxCount) override;
 
 private:
     std::size_t pointer_{ 0 };

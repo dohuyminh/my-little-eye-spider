@@ -11,6 +11,7 @@
 #include "types/runnable.h"
 
 #include <memory>
+#include <vector>
 
 namespace crawler {
 
@@ -26,16 +27,22 @@ public:
         IFrontPrioritizer* prioritizer, 
         IFrontSelector* frontSelector,
         IBackRouter* router,
-        IBackSelector* backSelector
+        IBackSelector* backSelector,
+        std::size_t batchSize = 1
     );
 
     void insertToFrontQueue(const std::string& url);
 
     std::optional<types::URL> popFront();
+    std::vector<types::URL> popFrontBatch(std::size_t maxCount);
 
     void insertToBackQueue(const std::vector<types::URL>& urls);
+    
+    void insertToBackQueue(std::vector<types::URL>&& urls);
+    void insertToBackQueue(types::URL&& url);
 
     std::optional<types::URL> popBack();
+    std::vector<types::URL> popBackBatch(std::size_t maxCount);
 
     void runImpl() override;
 
@@ -59,6 +66,8 @@ private:
 
     // Frontier is the producer of back queue URLs, to be consumed by worker threads
     std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue_;
+
+    std::size_t batchSize_;
 };
 
 }
