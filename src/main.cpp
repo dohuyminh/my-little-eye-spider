@@ -25,19 +25,18 @@ void signalHandler(int signum) {
     }
 }
 
-int main(int argc, char const *argv[])
-{	
+int main() {	
 
 	components::FrontierBuilder builder;
 	auto sharedURLQueue = std::make_shared<services::pattern::SharedQueue<crawler::types::URL>>();
 
 	builder.setSharedURLQueue(sharedURLQueue);
-	builder.setFrontQueuesSize(10);
-	builder.setBackQueuesSize(10);
-	builder.setPrioritizer(new components::SamplePrioritizer());
-	builder.setFrontSelector(new components::SampleFrontSelector());
-	builder.setRouter(new components::SampleRouter());
-	builder.setBackSelector(new components::SampleBackSelector());
+	builder.setFrontQueuesSize(20);
+	builder.setBackQueuesSize(20);
+	builder.setPrioritizer(new components::RoundRobinPrioritizer(20));
+	builder.setFrontSelector(new components::RoundRobinFrontSelector());
+	builder.setRouter(new components::RoundRobinBackRouter(20));
+	builder.setBackSelector(new components::RoundRobinBackSelector());
 
 	std::unique_ptr<components::Frontier> frontier = builder.get();
 	
@@ -58,7 +57,8 @@ int main(int argc, char const *argv[])
 		"https://www.ask.com/",
 		"https://www.github.com/user/repo",
 		"domain.co.uk/path/to/resource?param1=value1&param2=value2#section2",
-		"https://www.example.org/page"
+		"https://www.example.org/page", 
+		"http://münchen.de/" // Non ASCII URL
 	};
 
 	std::mutex printMutex;
@@ -105,7 +105,7 @@ int main(int argc, char const *argv[])
 				}
 				
 				// Sleep for 5 seconds
-				std::this_thread::sleep_for(std::chrono::seconds(5));
+				std::this_thread::sleep_for(std::chrono::seconds(1));
 			}
 		}
 	});

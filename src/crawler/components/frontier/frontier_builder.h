@@ -15,6 +15,8 @@ public:
 
     void setBackQueuesSize(std::size_t backQueueSize);
 
+    void setBatchSize(std::size_t batchSize);
+
     void setSharedURLQueue(std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue);
 
     void setPrioritizer(IFrontPrioritizer* prioritizer);
@@ -37,6 +39,7 @@ public:
 
     void reset() noexcept {
         frontQueuesSize_ = backQueuesSize_ = 0;
+        batchSize_ = 1;
         sharedURLQueue_ = nullptr;
         delete prioritizer_;
         prioritizer_ = nullptr;
@@ -57,6 +60,7 @@ public:
 private:
     std::size_t frontQueuesSize_{ 0 };
     std::size_t backQueuesSize_{ 0 };
+    std::size_t batchSize_{ 1 };
     std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue_{ nullptr };
     IFrontPrioritizer* prioritizer_{ nullptr };
     IFrontSelector* frontSelector_{ nullptr };

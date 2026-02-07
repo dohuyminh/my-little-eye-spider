@@ -14,9 +14,9 @@ public:
 
     URL() = default;
 
-    URL(std::string&& url) noexcept;
+    URL(std::string&& url);
     
-    URL(const std::string& url) noexcept;
+    URL(const std::string& url);
 
     const std::string& url() const noexcept {
         return url_; 

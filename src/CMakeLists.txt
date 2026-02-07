@@ -14,6 +14,16 @@ add_executable(
     main.cpp
 )
 
+target_compile_options(
+    main
+    PRIVATE
+        -Wall
+        -Wextra
+        -Wpedantic
+        -Werror
+        -O3
+)
+
 target_link_libraries(
     main 
     memory

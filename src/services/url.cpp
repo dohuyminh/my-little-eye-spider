@@ -16,7 +16,7 @@ constexpr bool isAscii(char c) {
 ParseResult parse(const std::string& url) {
     ParseResult result;
 
-    static const re2::RE2 pattern(R"(^(?:(https?):\/\/)?([^/?#]+)([^?#]*)(?:\?([^#]*))?(?:#(.*))?$)");
+    constexpr char pattern[] = R"(^(?:(https?):\/\/)?([^/?#]+)([^?#]*)(?:\?([^#]*))?(?:#(.*))?$)";
     
     std::string_view queryString;
     std::string_view authority;
@@ -72,7 +72,7 @@ ParseResult parse(const std::string& url) {
     }
 
     // Validate authority format (regex) - now on normalized authority
-    static const re2::RE2 authorityPattern(R"(^[a-zA-Z0-9:._\-]+$)");
+    constexpr char authorityPattern[] = R"(^[a-zA-Z0-9:._\-]+$)";
     if (!RE2::FullMatch(normalizedAuthority, authorityPattern)) {
         return result;  // Invalid authority format
     }
@@ -151,7 +151,7 @@ ParseResult parse(const std::string& url) {
     }
     
     // parse query parameters
-    static const re2::RE2 queryParamPattern(R"(([^=&]+)=([^&]*)&?)");
+    constexpr char queryParamPattern[] = R"(([^=&]+)=([^&]*)&?)";
     
     if (!queryString.empty()) {
         std::string key, value;

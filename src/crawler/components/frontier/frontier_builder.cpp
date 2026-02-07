@@ -26,6 +26,10 @@ void FrontierBuilder::setBackQueuesSize(std::size_t backQueuesSize) {
     backQueuesSize_ = backQueuesSize;
 }
 
+void FrontierBuilder::setBatchSize(std::size_t batchSize) {
+    batchSize_ = batchSize > 0 ? batchSize : 1;
+}
+
 void FrontierBuilder::setPrioritizer(IFrontPrioritizer* prioritizer) {
     if (!prioritizer) {
         throw std::invalid_argument("(Front) Prioritizer must be a valid heap-allocated object, to be owned by the frontier");
@@ -63,11 +67,13 @@ std::unique_ptr<Frontier> FrontierBuilder::get() {
         sharedURLQueue_,
         frontQueuesSize_, backQueuesSize_, 
         prioritizer_, frontSelector_, 
-        router_, backSelector_
+        router_, backSelector_,
+        batchSize_
     );
 
     sharedURLQueue_ = nullptr;
     frontQueuesSize_ = backQueuesSize_ = 0;
+    batchSize_ = 1;
     prioritizer_ = nullptr; 
     frontSelector_ = nullptr; 
     router_ = nullptr;
