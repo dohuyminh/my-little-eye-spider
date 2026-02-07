@@ -57,7 +57,8 @@ int main() {
 		"https://www.ask.com/",
 		"https://www.github.com/user/repo",
 		"domain.co.uk/path/to/resource?param1=value1&param2=value2#section2",
-		"https://www.example.org/page"
+		"https://www.example.org/page", 
+		"http://münchen.de/" // Non ASCII URL
 	};
 
 	std::mutex printMutex;
