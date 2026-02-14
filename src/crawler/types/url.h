@@ -18,6 +18,16 @@ public:
     
     URL(const std::string& url);
 
+    // copy constructor
+    URL(const URL& other) = default;
+
+    URL& operator=(const URL& other) = default;
+    
+    // move constructor
+    URL(URL&& other) = default;
+
+    URL& operator=(URL&& other) = default;
+
     const std::string& url() const noexcept {
         return url_; 
     }   

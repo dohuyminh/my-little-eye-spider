@@ -11,6 +11,8 @@ namespace types {
 class Runnable {
 public:
 
+    virtual void preLoop();
+
     void run();
 
     virtual void runImpl() = 0;
@@ -19,7 +21,7 @@ public:
         return isRunning_;
     }
 
-    void stop() noexcept;
+    virtual void stop();
     
     ~Runnable() = default;
 

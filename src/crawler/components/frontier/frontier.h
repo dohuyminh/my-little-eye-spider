@@ -7,7 +7,6 @@
 #include "i_back_router.h"
 #include "i_back_selector.h"
 
-#include "services/producer_consumer.h"
 #include "types/runnable.h"
 
 #include <memory>
@@ -21,7 +20,8 @@ class Frontier : public types::Runnable {
 public:
 
     Frontier(
-        std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue,
+        std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue,
+        std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue,
         std::size_t numFrontQueues,
         std::size_t numBackQueues,
         IFrontPrioritizer* prioritizer, 
@@ -65,8 +65,11 @@ private:
     std::unique_ptr<IBackSelector> backSelector_;
 
     // Frontier is the producer of back queue URLs, to be consumed by worker threads
-    std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue_;
+    std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue_;
 
+    // Frontier also consumes incoming URLs from the worker threads via front queues 
+    std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue_;
+    
     std::size_t batchSize_;
 };
 

@@ -17,7 +17,9 @@ public:
 
     void setBatchSize(std::size_t batchSize);
 
-    void setSharedURLQueue(std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue);
+    void setProducingQueue(std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue);
+
+    void setConsumingQueue(std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue);
 
     void setPrioritizer(IFrontPrioritizer* prioritizer);
 
@@ -30,7 +32,8 @@ public:
     bool canBuild() const noexcept {
         return frontQueuesSize_ > 0 && 
                 backQueuesSize_ > 0 && 
-                sharedURLQueue_ != nullptr &&
+                producingQueue_ != nullptr &&
+                consumingQueue_ != nullptr &&
                 prioritizer_ && 
                 frontSelector_ && 
                 router_ && 
@@ -40,7 +43,8 @@ public:
     void reset() noexcept {
         frontQueuesSize_ = backQueuesSize_ = 0;
         batchSize_ = 1;
-        sharedURLQueue_ = nullptr;
+        producingQueue_ = nullptr;
+        consumingQueue_ = nullptr;
         delete prioritizer_;
         prioritizer_ = nullptr;
         delete frontSelector_;
@@ -61,7 +65,8 @@ private:
     std::size_t frontQueuesSize_{ 0 };
     std::size_t backQueuesSize_{ 0 };
     std::size_t batchSize_{ 1 };
-    std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue_{ nullptr };
+    std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue_{ nullptr };
+    std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue_{ nullptr };
     IFrontPrioritizer* prioritizer_{ nullptr };
     IFrontSelector* frontSelector_{ nullptr };
     IBackRouter* router_{ nullptr };

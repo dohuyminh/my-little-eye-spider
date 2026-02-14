@@ -9,7 +9,6 @@
 #include <random>
 
 #include "services/url.h"
-#include "services/producer_consumer.h"
 
 using namespace crawler;
 using namespace services::url;
@@ -28,9 +27,11 @@ void signalHandler(int signum) {
 int main() {	
 
 	components::FrontierBuilder builder;
-	auto sharedURLQueue = std::make_shared<services::pattern::SharedQueue<crawler::types::URL>>();
+	auto producingQueue = std::make_shared<moodycamel::ConcurrentQueue<crawler::types::URL>>();
+	auto consumingQueue = std::make_shared<moodycamel::ConcurrentQueue<crawler::types::URL>>();
 
-	builder.setSharedURLQueue(sharedURLQueue);
+	builder.setProducingQueue(producingQueue);
+	builder.setConsumingQueue(consumingQueue);
 	builder.setFrontQueuesSize(20);
 	builder.setBackQueuesSize(20);
 	builder.setPrioritizer(new components::RoundRobinPrioritizer(20));
@@ -39,12 +40,14 @@ int main() {
 	builder.setBackSelector(new components::RoundRobinBackSelector());
 
 	std::unique_ptr<components::Frontier> frontier = builder.get();
+	components::WorkerPool pool(20, producingQueue, std::make_shared<moodycamel::ConcurrentQueue<std::string>>(), 20);
 	
 	// Register signal handler for Ctrl+C (SIGINT)
 	g_frontier.store(frontier.get());
 	std::signal(SIGINT, signalHandler);
 
 	frontier->run();
+	pool.run();
 
 	// Test URLs for random selection
 	std::vector<std::string> testURLs = {
@@ -88,28 +91,6 @@ int main() {
 		});
 	}
 
-	// Create 1 consumer thread that extracts from shared queue
-	std::thread consumerThread([&sharedURLQueue, &printMutex]() {
-		while (!g_stopRequested.load()) {
-			std::optional<crawler::types::URL> url = sharedURLQueue->pop();
-			
-			if (url.has_value()) {
-				{
-					std::unique_lock<std::mutex> lock(printMutex);
-					std::cout << "[Consumer] Extracted URL: " << url->url() << '\n';
-					std::cout << "  Scheme: " << url->scheme() << '\n';
-					std::cout << "  Domain: " << url->domain() << '\n';
-					std::cout << "  Port: " << url->port() << '\n';
-					std::cout << "  Path: " << url->path() << '\n';
-					std::cout << "  Fragment: " << url->fragment() << '\n';
-				}
-				
-				// Sleep for 5 seconds
-				std::this_thread::sleep_for(std::chrono::seconds(1));
-			}
-		}
-	});
-
 	// Wait for stop signal or until threads finish
 	while (!g_stopRequested.load()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(100));
@@ -127,13 +108,9 @@ int main() {
 		}
 	}
 
-	// Join consumer thread
-	if (consumerThread.joinable()) {
-		consumerThread.join();
-	}
-
 	// Stop frontier
 	frontier->stop();
+	pool.stop();
 
 	{
 		std::unique_lock<std::mutex> lock(printMutex);

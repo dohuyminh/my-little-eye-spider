@@ -5,11 +5,18 @@ namespace crawler {
 
 namespace components {
 
-void FrontierBuilder::setSharedURLQueue(std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue) {
-    if (!sharedURLQueue) {
-        throw std::invalid_argument("Shared URL Queue must be a valid shared pointer to a SharedQueue<types::URL> object");
+void FrontierBuilder::setProducingQueue(std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue) {
+    if (!producingQueue) {
+        throw std::invalid_argument("Shared URL Queue must be a valid shared pointer to a moodycamel::ConcurrentQueue<types::URL> object");
     }
-    sharedURLQueue_ = sharedURLQueue;
+    producingQueue_ = producingQueue;
+}
+
+void FrontierBuilder::setConsumingQueue(std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue) {
+    if (!consumingQueue) {
+        throw std::invalid_argument("Shared URL Queue must be a valid shared pointer to a moodycamel::ConcurrentQueue<types::URL> object");
+    }
+    consumingQueue_ = consumingQueue;
 }
 
 void FrontierBuilder::setFrontQueuesSize(std::size_t frontQueuesSize) {
@@ -64,14 +71,16 @@ std::unique_ptr<Frontier> FrontierBuilder::get() {
     }
 
     auto frontier = std::make_unique<Frontier>(
-        sharedURLQueue_,
+        producingQueue_,
+        consumingQueue_,
         frontQueuesSize_, backQueuesSize_, 
         prioritizer_, frontSelector_, 
         router_, backSelector_,
         batchSize_
     );
 
-    sharedURLQueue_ = nullptr;
+    producingQueue_ = nullptr;
+    consumingQueue_ = nullptr;
     frontQueuesSize_ = backQueuesSize_ = 0;
     batchSize_ = 1;
     prioritizer_ = nullptr; 

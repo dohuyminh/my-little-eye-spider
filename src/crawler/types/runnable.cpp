@@ -4,6 +4,10 @@ namespace crawler {
 
 namespace types {
 
+void Runnable::preLoop() {
+    
+}
+
 void Runnable::run() {
     
     // only start if not already running
@@ -15,6 +19,8 @@ void Runnable::run() {
         std::unique_lock<std::mutex> lock(runMutex_);
         isRunning_ = true;
     }
+
+    preLoop();
 
     // Create thread to run implementation
     eventLoopThread_ = std::thread([this]() {
@@ -33,7 +39,7 @@ void Runnable::run() {
     });
 }
 
-void Runnable::stop() noexcept {
+void Runnable::stop() {
     {
         std::unique_lock<std::mutex> lock(runMutex_);
         if (!isRunning_) {

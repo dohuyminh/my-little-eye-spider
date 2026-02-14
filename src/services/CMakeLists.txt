@@ -2,6 +2,7 @@ add_library(
     services 
     STATIC 
         url.cpp
+        thread_pool.cpp
 )
 
 target_link_libraries(

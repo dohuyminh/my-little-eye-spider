@@ -5,7 +5,8 @@ namespace crawler {
 namespace components {
 
 Frontier::Frontier(
-        std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue,
+        std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue,
+        std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue,
         std::size_t numFrontQueues,
         std::size_t numBackQueues,
         IFrontPrioritizer* prioritizer, 
@@ -14,7 +15,8 @@ Frontier::Frontier(
         IBackSelector* backSelector,
         std::size_t batchSize
     ) : 
-    sharedURLQueue_(sharedURLQueue),
+    producingQueue_(producingQueue),
+    consumingQueue_(consumingQueue),
     frontQueues_(numFrontQueues),
     backQueues_(numBackQueues), 
     prioritizer_(prioritizer), 
@@ -78,9 +80,7 @@ void Frontier::runImpl() {
 
     // Process back queues → shared queue for workers (single batch extract, up to batchSize_)
     auto backBatch = popBackBatch(batchSize_);
-    for (auto& url : backBatch) {
-        sharedURLQueue_->push(std::move(url));
-    }
+    producingQueue_->enqueue_bulk(backBatch.begin(), backBatch.size());
 }
 
 }
