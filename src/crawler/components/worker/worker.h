@@ -1,33 +1,31 @@
 #pragma once
 
-#include "types/url.h"
+#include <memory>
 
 #include "moodycamel/concurrentqueue.h"
-
-#include <memory>
+#include "types/url.h"
 
 namespace crawler {
 
 namespace components {
 
 class Worker {
-public:
+ public:
+  Worker(
+      std::shared_ptr<moodycamel::ConcurrentQueue<std::string>> producingURLs,
+      types::URL&& url);
 
-    Worker(
-        std::shared_ptr<moodycamel::ConcurrentQueue<std::string>> producingURLs, 
-        types::URL&& url
-    );
+  void doWork();
 
-    void doWork();
+ private:
+  types::URL url_;
 
-private:
+  std::shared_ptr<moodycamel::ConcurrentQueue<std::string>> producingURLs_;
 
-    types::URL url_;
-
-    std::shared_ptr<moodycamel::ConcurrentQueue<std::string>> producingURLs_;
-
+  // for printing purposes; remove later
+  static std::mutex printMutex_;
 };
 
-}
+}  // namespace components
 
-}
+}  // namespace crawler

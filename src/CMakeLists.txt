@@ -4,10 +4,10 @@ find_package(concurrentqueue REQUIRED)
 find_package(re2 REQUIRED)
 find_package(libidn2 REQUIRED)
 find_package(libpsl REQUIRED)
+find_package(CURL REQUIRED)
 
 add_subdirectory(memory)
 add_subdirectory(crawler)
-add_subdirectory(services)
 
 add_executable(
     main

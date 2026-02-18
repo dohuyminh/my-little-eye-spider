@@ -1,37 +1,33 @@
 #pragma once
 
 #include <atomic>
-#include <thread>
 #include <mutex>
+#include <thread>
 
 namespace crawler {
 
 namespace types {
 
 class Runnable {
-public:
+ public:
+  virtual void preLoop();
 
-    virtual void preLoop();
+  void run();
 
-    void run();
+  virtual void runImpl() = 0;
 
-    virtual void runImpl() = 0;
+  bool isRunning() const noexcept { return isRunning_; }
 
-    bool isRunning() const noexcept {
-        return isRunning_;
-    }
+  virtual void stop();
 
-    virtual void stop();
-    
-    ~Runnable() = default;
+  ~Runnable() = default;
 
-private:
-    std::thread eventLoopThread_;
-    std::mutex runMutex_;
-    bool isRunning_{ false };
-
+ private:
+  std::thread eventLoopThread_;
+  std::mutex runMutex_;
+  bool isRunning_{false};
 };
 
-}
+}  // namespace types
 
-}
+}  // namespace crawler

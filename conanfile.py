@@ -14,6 +14,7 @@ class Recipe(ConanFile):
         self.requires("re2/20251105")
         self.requires("libidn2/2.3.8")
         self.requires("libpsl/0.21.5")
+        self.requires("libcurl/8.18.0")
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.18]")

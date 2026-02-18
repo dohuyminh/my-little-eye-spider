@@ -1,5 +1,6 @@
 add_subdirectory(components)
 add_subdirectory(types)
+add_subdirectory(services)
 
 add_library(crawler STATIC spider.cpp)
 

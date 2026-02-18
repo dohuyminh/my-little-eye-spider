@@ -7,10 +7,10 @@ namespace crawler {
 namespace components {
 
 class SampleRouter : public IBackRouter {
-public:
-    std::size_t routeURL(const types::URL& url) override;
+ public:
+  std::size_t routeURL(const types::URL& url) override;
 };
 
-}
+}  // namespace components
 
-}
+}  // namespace crawler
