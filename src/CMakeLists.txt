@@ -1,10 +1,9 @@
-find_package(llhttp REQUIRED)
-find_package(stduuid REQUIRED)
 find_package(concurrentqueue REQUIRED)
 find_package(re2 REQUIRED)
 find_package(libidn2 REQUIRED)
 find_package(libpsl REQUIRED)
 find_package(CURL REQUIRED)
+find_package(lexbor REQUIRED)
 
 add_subdirectory(memory)
 add_subdirectory(crawler)
@@ -22,6 +21,7 @@ target_compile_options(
         -Wpedantic
         -Werror
         -O3
+        -g # REMOVE LATER
 )
 
 target_link_libraries(
@@ -30,6 +30,4 @@ target_link_libraries(
     crawler
     services
     types
-    llhttp::llhttp
-    stduuid::stduuid
 )

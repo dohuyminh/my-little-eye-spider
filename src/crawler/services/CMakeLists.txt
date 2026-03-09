@@ -4,6 +4,7 @@ add_library(
         url.cpp
         thread_pool.cpp
         html_downloader.cpp
+        html_parser.cpp
         curl_response.cpp
         curl_handler.cpp
 )
@@ -15,6 +16,7 @@ target_link_libraries(
         libidn2::libidn2
         libpsl::libpsl
         CURL::libcurl
+        lexbor::lexbor_static
 )
 
 target_include_directories(services PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

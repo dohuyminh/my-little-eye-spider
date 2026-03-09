@@ -1,5 +1,6 @@
 #pragma once
 
+#include <expected>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -10,8 +11,18 @@ namespace services {
 
 namespace url {
 
-struct ParseResult {
+enum class ParseError {
+  INVALID_URL,
+  SCHEME_ERROR,
+  AUTHORITY_ERROR,
+  PATH_ERROR,
+  QUERY_ERROR,
+  FRAGMENT_ERROR
+};
+
+struct ParseInfo {
   std::string scheme;
+  std::string userinfo;
   std::vector<std::string> subdomains;
   std::string domain;
   std::string port;
@@ -19,10 +30,10 @@ struct ParseResult {
   std::unordered_map<std::string, std::string> queryParams;
   std::string fragment;
 
-  bool parseSuccessful{false};
-
-  ParseResult() = default;
+  ParseInfo() = default;
 };
+
+using ParseResult = std::expected<ParseInfo, ParseError>;
 
 ParseResult parse(const std::string& url);
 

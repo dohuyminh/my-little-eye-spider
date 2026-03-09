@@ -3,6 +3,7 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace crawler {
@@ -56,6 +57,7 @@ class URL {
  private:
   std::string url_;
 
+  std::string userinfo_;
   std::string scheme_;
   std::vector<std::string> subdomains_;
   std::string domain_;
