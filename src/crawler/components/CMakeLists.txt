@@ -15,6 +15,9 @@ add_library(
         frontier/round_robin/rr_prioritizer.cpp
         frontier/round_robin/rr_router.cpp
         frontier/round_robin/rr_back_select.cpp
+
+        worker/worker.cpp
+        worker/worker_pool.cpp
 )
 
 target_link_libraries(

@@ -4,8 +4,6 @@
 
 namespace crawler {
 
-void Spider::run() const {
-    std::cout << "Spider is running" << std::endl;
-}
+void Spider::run() const { std::cout << "Spider is running" << std::endl; }
 
-}
+}  // namespace crawler

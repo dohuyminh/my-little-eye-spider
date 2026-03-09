@@ -7,10 +7,11 @@ namespace crawler {
 namespace components {
 
 class SamplePrioritizer : public IFrontPrioritizer {
-public:
-    std::pair<types::URL, std::size_t> selectQueue(const std::string& url) override;
+ public:
+  std::pair<types::URL, std::size_t> selectQueue(
+      const std::string& url) override;
 };
 
-}
+}  // namespace components
 
-}
+}  // namespace crawler

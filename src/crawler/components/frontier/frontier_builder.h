@@ -7,67 +7,68 @@ namespace crawler {
 namespace components {
 
 class FrontierBuilder {
-public:
-    
-    FrontierBuilder() = default;
+ public:
+  FrontierBuilder() = default;
 
-    void setFrontQueuesSize(std::size_t frontQueueSize);
+  void setFrontQueuesSize(std::size_t frontQueueSize);
 
-    void setBackQueuesSize(std::size_t backQueueSize);
+  void setBackQueuesSize(std::size_t backQueueSize);
 
-    void setBatchSize(std::size_t batchSize);
+  void setBatchSize(std::size_t batchSize);
 
-    void setSharedURLQueue(std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue);
+  void setProducingQueue(
+      std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue);
 
-    void setPrioritizer(IFrontPrioritizer* prioritizer);
+  void setConsumingQueue(
+      std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue);
 
-    void setFrontSelector(IFrontSelector* selector);
+  void setPrioritizer(IFrontPrioritizer* prioritizer);
 
-    void setRouter(IBackRouter* router);
+  void setFrontSelector(IFrontSelector* selector);
 
-    void setBackSelector(IBackSelector* selector);
+  void setRouter(IBackRouter* router);
 
-    bool canBuild() const noexcept {
-        return frontQueuesSize_ > 0 && 
-                backQueuesSize_ > 0 && 
-                sharedURLQueue_ != nullptr &&
-                prioritizer_ && 
-                frontSelector_ && 
-                router_ && 
-                backSelector_;
-    }
+  void setBackSelector(IBackSelector* selector);
 
-    void reset() noexcept {
-        frontQueuesSize_ = backQueuesSize_ = 0;
-        batchSize_ = 1;
-        sharedURLQueue_ = nullptr;
-        delete prioritizer_;
-        prioritizer_ = nullptr;
-        delete frontSelector_;
-        frontSelector_ = nullptr;
-        delete router_;
-        router_ = nullptr;
-        delete backSelector_;
-        backSelector_ = nullptr;
-    }
+  bool canBuild() const noexcept {
+    return frontQueuesSize_ > 0 && backQueuesSize_ > 0 &&
+           producingQueue_ != nullptr && consumingQueue_ != nullptr &&
+           prioritizer_ && frontSelector_ && router_ && backSelector_;
+  }
 
-    std::unique_ptr<Frontier> get();
+  void reset() noexcept {
+    frontQueuesSize_ = backQueuesSize_ = 0;
+    batchSize_ = 1;
+    producingQueue_ = nullptr;
+    consumingQueue_ = nullptr;
+    delete prioritizer_;
+    prioritizer_ = nullptr;
+    delete frontSelector_;
+    frontSelector_ = nullptr;
+    delete router_;
+    router_ = nullptr;
+    delete backSelector_;
+    backSelector_ = nullptr;
+  }
 
-    ~FrontierBuilder() {
-        reset();
-    }
+  std::unique_ptr<Frontier> get();
 
-private:
-    std::size_t frontQueuesSize_{ 0 };
-    std::size_t backQueuesSize_{ 0 };
-    std::size_t batchSize_{ 1 };
-    std::shared_ptr<services::pattern::SharedQueue<types::URL>> sharedURLQueue_{ nullptr };
-    IFrontPrioritizer* prioritizer_{ nullptr };
-    IFrontSelector* frontSelector_{ nullptr };
-    IBackRouter* router_{ nullptr };
-    IBackSelector* backSelector_{ nullptr };
+  ~FrontierBuilder() { reset(); }
+
+ private:
+  std::size_t frontQueuesSize_{0};
+  std::size_t backQueuesSize_{0};
+  std::size_t batchSize_{1};
+  std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue_{
+      nullptr};
+  std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue_{
+      nullptr};
+  IFrontPrioritizer* prioritizer_{nullptr};
+  IFrontSelector* frontSelector_{nullptr};
+  IBackRouter* router_{nullptr};
+  IBackSelector* backSelector_{nullptr};
 };
 
-}
+}  // namespace components
 
-}
+}  // namespace crawler
