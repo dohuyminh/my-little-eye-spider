@@ -1,16 +1,13 @@
 #include "url.h"
 
+#include <sched.h>
+
 #include <array>
 #include <cctype>
-#include <iomanip>
+#include <cstddef>
 #include <mutex>
-#include <sstream>
 #include <stdexcept>
 #include <string_view>
-
-#include "idn2.h"
-#include "libpsl.h"
-#include "re2/re2.h"
 
 namespace crawler {
 
@@ -18,86 +15,156 @@ namespace services {
 
 namespace url {
 
-constexpr bool isAscii(char c) { return static_cast<unsigned char>(c) <= 127; }
-
-constexpr bool isUnreserved(char c) {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-         (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~';
-}
-
-char hexToDec(std::string_view hexView) {
-  if (hexView.size() != 2) {
-    throw std::runtime_error("[PERCENT DECODING]: cannot parse hex value");
+bool parseAndApplyRelativeURL(const std::string& relativeURL,
+                      std::vector<std::string>& path) {
+  if (!isRelativeURL(relativeURL.c_str())) {
+    return false;
   }
 
-  static std::array<int, 256> lookup{};
-  static std::once_flag lookupInitFlag;
-
-  std::call_once(lookupInitFlag, []() {
-    for (auto i{0ULL}; i < 256; ++i) lookup[i] = -1;
-    for (char c{'0'}; c <= '9'; ++c)
-      lookup[static_cast<unsigned char>(c)] = c - '0';
-    for (char c{'A'}; c <= 'F'; ++c)
-      lookup[static_cast<unsigned char>(c)] = c - 'A' + 10;
-    for (char c{'a'}; c <= 'f'; ++c)
-      lookup[static_cast<unsigned char>(c)] = c - 'a' + 10;
-  });
-
-  auto high{lookup[static_cast<unsigned char>(hexView[0])]},
-      low{lookup[static_cast<unsigned char>(hexView[1])]};
-
-  if (high == -1 || low == -1) {
-    throw std::runtime_error("[PERCENT DECODING]: cannot parse hex value");
+  if (relativeURL.empty()) {
+    return true;  // nothing to change
   }
 
-  return static_cast<char>((high << 4) | low);
-}
+  std::vector<std::string> newPath = path;  // start with current path
 
-std::string percentEncode(const std::string& src, char ignore = '\0') {
-  std::string result;
-  result.reserve(src.size() * 3);
+  size_t pos = 0;
 
-  constexpr char hexStr[]{"0123456789ABCDEF"};
+  // Check if the relative URL starts with '/'
+  if (relativeURL[0] == '/') {
+    newPath.clear();  // start from root
+    newPath.emplace_back("/");
+    pos = 1;  // skip the leading slash
+  }
 
-  for (unsigned char c : src) {
-    if (isUnreserved(c) || c == ignore) {
-      result.push_back(c);
+  while (pos < relativeURL.size()) {
+    // Find next slash
+    size_t next{relativeURL.find('/', pos)};
+    bool backFlag{false};
+    std::string_view segment;
+    if (next == std::string::npos) {
+      segment = std::string_view(relativeURL).substr(pos);
+      pos = relativeURL.size();  // will exit loop
     } else {
-      result.push_back('%');
-      result.push_back(hexStr[c >> 4]);
-      result.push_back(hexStr[c & 0xF]);
+      segment = std::string_view(relativeURL).substr(pos, next - pos);
+      pos = next + 1;
+      backFlag = true;
     }
-  }
-  return result;
-}
 
-std::string percentDecode(const std::string& src) {
-  std::string result;
-  result.reserve(src.size());
-
-  for (auto ptr{0ULL}; ptr < src.size();) {
-    if (src[ptr] == '%' && ptr + 2 < src.size()) {
-      result.push_back(hexToDec(std::string_view(src.c_str() + ptr + 1, 2)));
-      ptr += 3;
+    // Handle special segments
+    if (segment.empty()) {
+      // Empty segment due to multiple slashes – ignore
       continue;
     }
-    result.push_back(src[ptr]);
-    ++ptr;
+    if (segment == ".") {
+      // Current directory – do nothing
+      continue;
+    }
+    if (segment == "..") {
+      // Parent directory – pop if possible
+      if (newPath.empty() || (newPath.size() == 1 && newPath.back() == "/")) {
+        return false;  // cannot go above root
+      }
+      newPath.pop_back();
+      continue;
+    }
+
+    // Normal segment: encode if not already percent-encoded
+    if (isPercentEncoded(segment)) {
+      newPath.emplace_back(segment);
+    } else {
+      newPath.emplace_back(percentEncode(segment));
+    }
+
+    if (backFlag) {
+      newPath.back().push_back('/');
+    }
   }
 
-  return result;
+  path = std::move(newPath);
+  return true;
 }
 
-ParseResult parse(const std::string& url) {
-  ParseInfo result;
+bool isRelativeURL(std::string_view url) {
+  if (url.empty()) {
+    return true;  // empty string is technically valid (no-op relative URL)
+  }
+
+  // Check for scheme pattern: letter+ followed by "://"
+  // RFC 3986: scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
+  size_t colonPos{url.find(':')};
+
+  // No colon means no scheme, so it's relative
+  if (colonPos == std::string_view::npos) {
+    return true;
+  }
+
+  // Check if it's followed by "//" (scheme-specific part delimiter)
+  if (colonPos + 2 >= url.size() || url[colonPos + 1] != '/' ||
+      url[colonPos + 2] != '/') {
+    // Just "foo:bar" without "//" - could be a colon in path, not a scheme
+    // Check if all chars before colon are valid scheme chars
+    if (colonPos == 0) {
+      return true;  // starts with ":" - not a scheme, treat as relative
+    }
+
+    // Validate scheme characters
+    for (size_t i = 0; i < colonPos; ++i) {
+      char c = url[i];
+      if (i == 0) {
+        // First char must be ALPHA
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))) {
+          return true;  // not a valid scheme start, so relative
+        }
+      } else {
+        // Subsequent chars: ALPHA / DIGIT / "+" / "-" / "."
+        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+              (c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.')) {
+          return true;  // invalid scheme char, so not a scheme
+        }
+      }
+    }
+    // All chars before colon are valid scheme chars, but no "://" follows
+    // This is ambiguous but likely not an absolute URL
+    return true;
+  }
+
+  // We have "://" - verify the scheme part is valid
+  if (colonPos == 0) {
+    return true;  // starts with "://" - protocol-relative URL
+  }
+
+  // Validate scheme characters
+  for (size_t i = 0; i < colonPos; ++i) {
+    char c = url[i];
+    if (i == 0) {
+      // First char must be ALPHA
+      if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))) {
+        return true;  // not a valid scheme start
+      }
+    } else {
+      // Subsequent chars: ALPHA / DIGIT / "+" / "-" / "."
+      if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+            (c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.')) {
+        return true;  // invalid scheme char
+      }
+    }
+  }
+
+  // Has valid scheme followed by "://" - this is an absolute URL
+  return false;
+}
+
+ParseResult<URLParseResult> parse(const std::string& url)  {
+  URLParseResult result;
 
   constexpr char pattern[] =
       R"(^(?:(https?|ftp):\/\/)?([^/?#]+)([^?#]*)(?:\?([^#]*))?(?:#(.*))?$)";
 
   std::string_view queryString;
   std::string_view authority;
+  std::string_view path;
 
-  if (!RE2::FullMatch(url, pattern, &result.scheme, &authority, &result.path,
+  if (!RE2::FullMatch(url, pattern, &result.scheme, &authority, &path,
                       &queryString, &result.fragment)) {
     return std::unexpected(ParseError::INVALID_URL);
   }
@@ -110,7 +177,7 @@ ParseResult parse(const std::string& url) {
   // decompose URL into 3 components: [userinfo +] host [+ port]
   std::string_view userinfo, host, port;
   constexpr char authorityPattern[]{
-      R"(^(([^@]*)@)?(\[[0-9a-fA-F:.]+\]|[a-zA-Z0-9.-]+)(:(\d+))?$)"};
+      R"(^(([^@]*)@)?(\[[0-9a-fA-F:.]+\]|[^/?#:@]+)(:(\d+))?$)"};
   if (!RE2::FullMatch(authority, authorityPattern, nullptr, &userinfo, &host,
                       nullptr, &port)) {
     return std::unexpected(ParseError::INVALID_URL);
@@ -152,6 +219,11 @@ ParseResult parse(const std::string& url) {
   // port
   if (!port.empty()) {
     result.port = port;
+  }
+
+  // ensure host is not actually empty
+  if (host.empty()) {
+    return std::unexpected(ParseError::AUTHORITY_ERROR);
   }
 
   // normalize authority (handle IDN conversion and port extraction)
@@ -200,7 +272,7 @@ ParseResult parse(const std::string& url) {
   // Extract domain and subdomains using libpsl
   const psl_ctx_t* psl{psl_builtin()};
   if (psl != nullptr) {
-    const char* registeredDomain = psl_registrable_domain(psl, hostStr.c_str());
+    const char* registeredDomain{psl_registrable_domain(psl, hostStr.c_str())};
 
     if (registeredDomain != nullptr) {
       result.domain = registeredDomain;
@@ -208,9 +280,9 @@ ParseResult parse(const std::string& url) {
 
       // Extract subdomains: everything before the registered domain
       if (hostStr.length() > registeredDomainStr.length()) {
-        size_t domainStart = hostStr.rfind(registeredDomainStr);
+        size_t domainStart{hostStr.rfind(registeredDomainStr)};
         if (domainStart > 0 && hostStr[domainStart - 1] == '.') {
-          std::string subdomainPart = hostStr.substr(0, domainStart - 1);
+          std::string subdomainPart{hostStr.substr(0, domainStart - 1)};
 
           // Split subdomains by '.'
           std::string subdomain;
@@ -255,8 +327,14 @@ ParseResult parse(const std::string& url) {
     }
   }
 
+  // parse path
+  bool pathParse{parseAndApplyRelativeURL(path.data(), result.path)};
+  if (!pathParse) {
+    return std::unexpected(ParseError::PATH_ERROR);
+  }
+
   // parse query parameters
-  constexpr char queryParamPattern[] = R"(([^=&]+)=([^&]*)&?)";
+  constexpr char queryParamPattern[]{R"(([^=&]+)=([^&]*)&?)"};
 
   if (!queryString.empty()) {
     std::string key, value;
@@ -266,11 +344,176 @@ ParseResult parse(const std::string& url) {
   }
 
   result.scheme = percentEncode(result.scheme);
-  result.path = percentEncode(result.path, '/');
   result.fragment = percentEncode(result.fragment, '/');
 
   return result;
 }
+
+ParseResult<RobotsTxtRepr> parseRobotsTxt(const std::string& content) {
+  RobotsTxtRepr result;
+  result["allow"] = nlohmann::json::array();
+  result["disallow"] = nlohmann::json::array();
+
+  std::string line;
+  std::stringstream ss{content};
+
+  bool inGeneralUserAgent{false};
+
+  while (std::getline(ss, line)) {
+    // trim whitespace at both left and right
+    line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](unsigned char c) {
+      return !std::isspace(c);
+    }));
+
+    line.erase(std::find_if(line.rbegin(), line.rend(), [](unsigned char c) {
+      return !std::isspace(c);
+    }).base(), line.end());
+
+    // if the line is empty or starts with a hash (#), it's a comment
+    if (line.empty() || line.front() == '#') {
+      continue;
+    }
+
+    // Parse directive: value pairs
+    // Regex captures directive and value (stopping at #), optional trailing comment ignored
+    std::string_view lineView{line};
+    std::string_view directive, value;
+    constexpr char pattern[]{R"(^([A-Za-z-]+)\s*:\s*([^#]*)(?:\s*#.*)?$)"};
+
+    if (!RE2::FullMatch(lineView, pattern, &directive, &value)) {
+      continue;
+    }
+
+    // trim value
+    value.remove_prefix(std::distance(value.begin(),
+      std::find_if(value.begin(), value.end(), [](unsigned char c) {
+        return !std::isspace(c);
+      })));
+    value.remove_suffix(std::distance(
+      std::find_if(value.rbegin(), value.rend(), [](unsigned char c) {
+        return !std::isspace(c);
+      }).base(), value.end()));
+
+    std::string directiveStr{directive};
+    std::string valueStr{value};
+
+    // Check for User-Agent directive
+    if (directiveStr == "User-agent" || directiveStr == "User-Agent") {
+      inGeneralUserAgent = (valueStr == "*");
+      continue;
+    }
+
+    // Only process directives if we're in the general user-agent section
+    if (!inGeneralUserAgent) {
+      continue;
+    }
+
+    if (directiveStr == "Allow" || directiveStr == "allow") {
+      if (!valueStr.empty()) {
+        result["allow"].push_back(valueStr);
+      }
+    } else if (directiveStr == "Disallow" || directiveStr == "disallow") {
+      if (!valueStr.empty()) {
+        result["disallow"].push_back(valueStr);
+      }
+    } else if (directiveStr == "Crawl-delay" || directiveStr == "crawl-delay") {
+      try {
+        double delay{std::stod(valueStr)};
+        result["crawl-delay"] = delay;
+      } catch (std::invalid_argument const&) {
+        return std::unexpected(ParseError::ROBOTS_TXT_ERROR);
+      } catch (std::out_of_range const&) {
+        return std::unexpected(ParseError::ROBOTS_TXT_ERROR);
+      }
+    }
+  }
+
+  return result;
+}
+
+bool urlIsDisallowed(const std::string& url, const std::string& pattern) {
+  // Empty pattern means nothing is disallowed
+  if (pattern.empty()) {
+    return false;
+  }
+
+  // Extract path from URL (everything after authority, before query/fragment)
+  // URL format: scheme://authority/path?query#fragment
+  std::string_view urlView{url};
+
+  // Find start of path (after authority)
+  std::size_t pathStart{urlView.find("://")};
+  if (pathStart == std::string_view::npos) {
+    // No scheme, check if it starts with /
+    pathStart = 0;
+  } else {
+    // Skip past "://"
+    pathStart += 3;
+    // Find the path start (after authority)
+    std::size_t authorityEnd{urlView.find('/', pathStart)};
+    if (authorityEnd == std::string_view::npos) {
+      // No path component
+      return false;
+    }
+    pathStart = authorityEnd;
+  }
+
+  // Extract path (stop at ? or #)
+  std::size_t pathEnd{urlView.find_first_of("?#", pathStart)};
+  std::string path{std::string{urlView.substr(pathStart, pathEnd == std::string_view::npos ? std::string_view::npos : pathEnd - pathStart)}};
+
+  // A pattern of "/" disallows everything
+  if (pattern == "/") {
+    return true;
+  }
+
+  // Check if pattern contains wildcards
+  bool hasWildcard{pattern.find('*') != std::string::npos};
+  bool hasEndAnchor{!pattern.empty() && pattern.back() == '$'};
+
+  // No wildcards: simple prefix match
+  if (!hasWildcard && !hasEndAnchor) {
+    if (path.size() < pattern.size()) {
+      return false;
+    }
+    return path.substr(0, pattern.size()) == pattern;
+  }
+
+  // Convert robots.txt pattern to regex
+  // * matches any sequence of characters (including empty)
+  // $ at end means match must reach end of path
+  std::string regexPattern{"^"};
+  std::string patternToProcess = pattern;
+
+  // Remove trailing $ for processing, but remember it was there
+  if (hasEndAnchor) {
+    patternToProcess.pop_back();
+  }
+
+  for (char c : patternToProcess) {
+    if (c == '*') {
+      regexPattern += ".*";  // * matches any sequence
+    } else if (c == '$') {
+      // $ in middle of pattern is treated as literal (rare edge case)
+      regexPattern += "\\$";
+    } else if (c == '.' || c == '?' || c == '+' || c == '^' || c == '[' ||
+               c == ']' || c == '(' || c == ')' || c == '{' || c == '}' ||
+               c == '|' || c == '\\') {
+      regexPattern += '\\';
+      regexPattern += c;
+    } else {
+      regexPattern += c;
+    }
+  }
+
+  if (hasEndAnchor) {
+    regexPattern += "$";  // Anchor to end of string
+  }
+
+  // Match against path
+  return RE2::FullMatch(path, regexPattern);
+}
+
 
 }  // namespace url
 
