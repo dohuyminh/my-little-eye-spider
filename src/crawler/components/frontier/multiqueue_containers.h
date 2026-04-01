@@ -38,7 +38,15 @@ class MultiQueueContainers {
 public:
   using ValueType = typename Queue::value_type;
 
-  MultiQueueContainers(std::size_t numQueues) : queues_(numQueues) {}
+  MultiQueueContainers(std::size_t numQueues) : queues_(numQueues) {
+    if (numQueues == 0) {
+      throw std::invalid_argument("Number of queues must be positive");
+    }
+  }
+
+  std::size_t numQueues() const noexcept {
+    return queues_.size();
+  }
 
   void enqueue(std::size_t queueIndex, const ValueType& value) {
     if (queueIndex >= queues_.size()) {

@@ -3,8 +3,7 @@
 #include <memory>
 #include <vector>
 
-#include "back_queues.h"
-#include "front_queues.h"
+#include "multiqueue_containers.h"
 #include "i_back_router.h"
 #include "i_back_selector.h"
 #include "i_front_prioritizer.h"
@@ -41,9 +40,12 @@ class Frontier : public types::Runnable {
   void runImpl() override;
 
  private:
-  // queues access
-  FrontQueues frontQueues_;
-  BackQueues backQueues_;
+  using FrontQueueContainer = MultiQueueContainers<MoodyCamelConcurrentQueueWrapper<types::URL>>;
+  using BackQueueContainer = MultiQueueContainers<StdQueueWrapper<types::URL>>;
+
+  // front and back queues
+  FrontQueueContainer frontQueues_;
+  BackQueueContainer backQueues_;
 
   // for assigning each URL a respective priority to be put into front queue
   std::unique_ptr<IFrontPrioritizer> prioritizer_;

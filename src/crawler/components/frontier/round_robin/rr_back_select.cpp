@@ -5,7 +5,7 @@ namespace crawler {
 namespace components {
 
 std::optional<types::URL> RoundRobinBackSelector::extract(
-    BackQueues& backQueues) {
+    IBackSelector::BackQueueContainer& backQueues) {
   std::unique_lock<std::mutex> lock(mutex_);
 
   const std::size_t nQueues = backQueues.numQueues();
@@ -14,7 +14,7 @@ std::optional<types::URL> RoundRobinBackSelector::extract(
     const std::size_t currentIndex = pointer_;
     pointer_ = (pointer_ + 1) % nQueues;
 
-    auto urlOpt = backQueues.selectAndPop(currentIndex);
+    auto urlOpt = backQueues.dequeue(currentIndex);
     if (urlOpt.has_value()) {
       return urlOpt;
     }
@@ -24,7 +24,7 @@ std::optional<types::URL> RoundRobinBackSelector::extract(
 }
 
 std::vector<types::URL> RoundRobinBackSelector::extractBatch(
-    BackQueues& backQueues, std::size_t maxCount) {
+    IBackSelector::BackQueueContainer& backQueues, std::size_t maxCount) {
   std::unique_lock<std::mutex> lock(mutex_);
 
   std::vector<types::URL> result;
@@ -37,7 +37,7 @@ std::vector<types::URL> RoundRobinBackSelector::extractBatch(
       const std::size_t currentIndex = pointer_;
       pointer_ = (pointer_ + 1) % nQueues;
 
-      auto urlOpt = backQueues.selectAndPop(currentIndex);
+      auto urlOpt = backQueues.dequeue(currentIndex);
       if (urlOpt.has_value()) {
         result.push_back(std::move(urlOpt.value()));
         ++collected;

@@ -2,7 +2,6 @@
 
 #include <mutex>
 
-#include "../front_queues.h"
 #include "../i_front_selector.h"
 
 namespace crawler {
@@ -13,8 +12,8 @@ class RoundRobinFrontSelector : public IFrontSelector {
  public:
   RoundRobinFrontSelector() = default;
 
-  std::optional<types::URL> extract(FrontQueues& frontQueues) override;
-  std::vector<types::URL> extractBatch(FrontQueues& frontQueues,
+  std::optional<types::URL> extract(IFrontSelector::FrontQueueContainer& frontQueues) override;
+  std::vector<types::URL> extractBatch(IFrontSelector::FrontQueueContainer& frontQueues,
                                        std::size_t maxCount) override;
 
  private:

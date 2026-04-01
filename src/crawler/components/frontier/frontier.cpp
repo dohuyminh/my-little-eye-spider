@@ -24,7 +24,7 @@ void Frontier::insertToFrontQueue(const std::string& url) {
   try {
     types::URL urlObj(url);
     auto [urlWithPriority, queueIndex] = prioritizer_->selectQueue(url);
-    frontQueues_.insert(std::move(urlWithPriority), queueIndex);
+    frontQueues_.enqueue(queueIndex, std::move(urlWithPriority));
   } catch (const std::invalid_argument& e) {
     // Ignore invalid URL
   }
@@ -33,20 +33,20 @@ void Frontier::insertToFrontQueue(const std::string& url) {
 void Frontier::insertToBackQueue(const std::vector<types::URL>& urls) {
   for (const types::URL& url : urls) {
     std::size_t backQueueIndex = router_->routeURL(url);
-    backQueues_.insert(url, backQueueIndex);
+    backQueues_.enqueue(backQueueIndex, url);
   }
 }
 
 void Frontier::insertToBackQueue(std::vector<types::URL>&& urls) {
   for (auto& url : urls) {
     std::size_t backQueueIndex = router_->routeURL(url);
-    backQueues_.insert(std::move(url), backQueueIndex);
+    backQueues_.enqueue(backQueueIndex, std::move(url));
   }
 }
 
 void Frontier::insertToBackQueue(types::URL&& url) {
   std::size_t backQueueIndex = router_->routeURL(url);
-  backQueues_.insert(std::move(url), backQueueIndex);
+  backQueues_.enqueue(backQueueIndex, std::move(url));
 }
 
 std::optional<types::URL> Frontier::popFront() {

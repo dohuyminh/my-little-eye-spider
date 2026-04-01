@@ -5,7 +5,7 @@ namespace crawler {
 namespace components {
 
 std::optional<types::URL> RoundRobinFrontSelector::extract(
-    FrontQueues& frontQueues) {
+    IFrontSelector::FrontQueueContainer& frontQueues) {
   std::unique_lock<std::mutex> lock(mutex_);
 
   const std::size_t nQueues = frontQueues.numQueues();
@@ -14,7 +14,7 @@ std::optional<types::URL> RoundRobinFrontSelector::extract(
     const std::size_t currentIndex = pointer_;
     pointer_ = (pointer_ + 1) % nQueues;
 
-    auto urlOpt = frontQueues.selectAndPop(currentIndex);
+    auto urlOpt = frontQueues.dequeue(currentIndex);
     if (urlOpt.has_value()) {
       return urlOpt;
     }
@@ -24,7 +24,7 @@ std::optional<types::URL> RoundRobinFrontSelector::extract(
 }
 
 std::vector<types::URL> RoundRobinFrontSelector::extractBatch(
-    FrontQueues& frontQueues, std::size_t maxCount) {
+    IFrontSelector::FrontQueueContainer& frontQueues, std::size_t maxCount) {
   std::unique_lock<std::mutex> lock(mutex_);
 
   std::vector<types::URL> result;
@@ -37,7 +37,7 @@ std::vector<types::URL> RoundRobinFrontSelector::extractBatch(
       const std::size_t currentIndex = pointer_;
       pointer_ = (pointer_ + 1) % nQueues;
 
-      auto urlOpt = frontQueues.selectAndPop(currentIndex);
+      auto urlOpt = frontQueues.dequeue(currentIndex);
       if (urlOpt.has_value()) {
         result.emplace_back(std::move(*urlOpt));
         ++collected;

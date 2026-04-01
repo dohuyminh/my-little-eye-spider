@@ -2,7 +2,8 @@
 
 #include <vector>
 
-#include "back_queues.h"
+#include "multiqueue_containers.h"
+#include "types/url.h"
 
 namespace crawler {
 
@@ -10,8 +11,10 @@ namespace components {
 
 class IBackSelector {
  public:
-  virtual std::optional<types::URL> extract(BackQueues& backQueues) = 0;
-  virtual std::vector<types::URL> extractBatch(BackQueues& backQueues,
+  using BackQueueContainer = MultiQueueContainers<StdQueueWrapper<types::URL>>;
+
+  virtual std::optional<types::URL> extract(BackQueueContainer& backQueues) = 0;
+  virtual std::vector<types::URL> extractBatch(BackQueueContainer& backQueues,
                                                std::size_t maxCount) = 0;
   virtual ~IBackSelector() = default;
 };

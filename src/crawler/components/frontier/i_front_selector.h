@@ -2,7 +2,8 @@
 
 #include <vector>
 
-#include "front_queues.h"
+#include "multiqueue_containers.h"
+#include "types/url.h"
 
 namespace crawler {
 
@@ -10,8 +11,10 @@ namespace components {
 
 class IFrontSelector {
  public:
-  virtual std::optional<types::URL> extract(FrontQueues& frontQueues) = 0;
-  virtual std::vector<types::URL> extractBatch(FrontQueues& frontQueues,
+  using FrontQueueContainer = MultiQueueContainers<MoodyCamelConcurrentQueueWrapper<types::URL>>;
+
+  virtual std::optional<types::URL> extract(FrontQueueContainer& frontQueues) = 0;
+  virtual std::vector<types::URL> extractBatch(FrontQueueContainer& frontQueues,
                                                std::size_t maxCount) = 0;
   virtual ~IFrontSelector() = default;
 };

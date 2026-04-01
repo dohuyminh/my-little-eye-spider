@@ -8,8 +8,8 @@ namespace components {
 
 class SampleBackSelector : public IBackSelector {
  public:
-  std::optional<types::URL> extract(BackQueues& backQueues) override;
-  std::vector<types::URL> extractBatch(BackQueues& backQueues,
+  std::optional<types::URL> extract(IBackSelector::BackQueueContainer& backQueues) override;
+  std::vector<types::URL> extractBatch(IBackSelector::BackQueueContainer& backQueues,
                                        std::size_t maxCount) override;
 };
 
