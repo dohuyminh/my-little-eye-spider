@@ -15,17 +15,29 @@ class CoroutineThreadPool {
 public:
   explicit CoroutineThreadPool(std::size_t numThreads = 0);
 
-  template <typename AwaitableFn, typename ...Args>
+  template <bool ReturnFuture = true, typename AwaitableFn, typename ...Args>
   auto enqueue(AwaitableFn&& fn, Args&& ...args) {
-    using Awaitable = std::invoke_result_t<AwaitableFn, Args...>;
-    using ReturnType = typename Awaitable::value_type;
+    // Capture fn and args as a tuple to preserve their values
+    // and give co_spawn full control over the awaitable lifetime
+    auto task = [fn = std::forward<AwaitableFn>(fn),
+                 args_tuple = std::tuple{std::forward<Args>(args)...}]
+                () mutable -> boost::asio::awaitable<void> {
+      co_return co_await std::apply(std::forward<AwaitableFn>(fn), args_tuple);
+    };
 
-    // Start the coroutine on the io_context and obtain a future for its result
-    return boost::asio::co_spawn(
-      ioCtx_,
-      std::invoke(std::forward<AwaitableFn>(fn), std::forward<Args>(args)...),
-      boost::asio::use_future
-    );
+    if constexpr (ReturnFuture) {
+      return boost::asio::co_spawn(
+        ioCtx_,
+        std::move(task),
+        boost::asio::use_future
+      );
+    } else {
+      boost::asio::co_spawn(
+        ioCtx_,
+        std::move(task),
+        boost::asio::detached
+      );
+    }
   }
 
   ~CoroutineThreadPool();

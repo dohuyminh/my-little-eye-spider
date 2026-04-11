@@ -19,10 +19,10 @@ enum class DomainStatus {
   DISALLOWED
 };
 
-class PolitenessTracker {
+class PolitenessTracker : public std::enable_shared_from_this<PolitenessTracker> {
 public:
 
-  static PolitenessTracker& get();
+  static std::shared_ptr<PolitenessTracker> get();
 
   bool domainIsLocked(const std::string& domain);
 

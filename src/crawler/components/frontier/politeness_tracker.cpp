@@ -5,14 +5,16 @@
 #include "services/url.h"
 #include "services/html_downloader.h"
 
+#include <iostream>
+
 using RobotsTxtRepr = crawler::services::url::RobotsTxtRepr;
 
 namespace crawler {
 
 namespace components {
 
-PolitenessTracker& PolitenessTracker::get() {
-  static PolitenessTracker instance;
+std::shared_ptr<PolitenessTracker> PolitenessTracker::get() {
+  static auto instance{std::shared_ptr<PolitenessTracker>(new PolitenessTracker())};
   return instance;
 }
 
@@ -41,13 +43,19 @@ const services::url::RobotsTxtRepr& PolitenessTracker::getRobotsTxt(const types:
   services::curl::Response response{downloader(domainRoot)};
 
   if (response.code() != 200) {
-    robotsTxtLookup_[domain] = RobotsTxtRepr{}; // empty JSON object
+    robotsTxtLookup_[domain] = {
+      {"allow", nlohmann::json::array()},
+      {"disallow", nlohmann::json::array()}
+    }; // empty JSON object
     return robotsTxtLookup_[domain];
   }
 
   services::url::ParseResult<services::url::RobotsTxtRepr> result{services::url::parseRobotsTxt(response.content())};
   if (!result.has_value()) {
-    robotsTxtLookup_[domain] = RobotsTxtRepr{}; // empty JSON object
+    robotsTxtLookup_[domain] = {
+      {"allow", nlohmann::json::array()},
+      {"disallow", nlohmann::json::array()}
+    }; // empty JSON object
     return robotsTxtLookup_[domain];
   }
 
@@ -90,17 +98,20 @@ DomainStatus PolitenessTracker::handleURL(const types::URL& url) {
       }
       lockedDomain_.insert(url.domain());
     }
-    
+
     // set a delay for release
-    delayPool_.enqueue([this, domain = url.domain(), seconds]() mutable -> boost::asio::awaitable<void> {
+    auto self{shared_from_this()};
+    
+    delayPool_.enqueue<false>([self, domain = url.domain(), seconds = seconds]() mutable -> boost::asio::awaitable<void> {
+      
       // wait for specified amount of time
       co_await boost::asio::steady_timer(
         co_await boost::asio::this_coro::executor, std::chrono::seconds(seconds)
       ).async_wait(boost::asio::use_awaitable);
 
       // remove domain from locked set
-      std::unique_lock<std::shared_mutex> insertLock(lockedDomainsMutex_);
-      lockedDomain_.erase(domain);
+      std::unique_lock<std::shared_mutex> freeLock(self->lockedDomainsMutex_);
+      self->lockedDomain_.erase(domain);
       
       co_return;
     });
