@@ -19,10 +19,12 @@ curl::Response Downloader::operator()(const types::URL& url) {
 
   // perform GET request
   std::string response;
-  curl_easy_setopt(handler, CURLOPT_URL, url.url().c_str());
+  curl_easy_setopt(handler, CURLOPT_URL, url.to_string().c_str());
   curl_easy_setopt(handler, CURLOPT_WRITEFUNCTION, &Downloader::writeCallback);
   curl_easy_setopt(handler, CURLOPT_WRITEDATA, &response);
   curl_easy_setopt(handler, CURLOPT_TIMEOUT, 10L);
+  curl_easy_setopt(handler, CURLOPT_FOLLOWLOCATION, 1L);  // Follow HTTP redirects
+  curl_easy_setopt(handler, CURLOPT_MAXREDIRS, 5L);       // Max 5 redirects
 
   CURLcode res{curl_easy_perform(handler)};
   if (res != CURLE_OK) {
