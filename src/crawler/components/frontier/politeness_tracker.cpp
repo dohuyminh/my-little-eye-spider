@@ -13,8 +13,8 @@ namespace crawler {
 
 namespace components {
 
-std::shared_ptr<PolitenessTracker> PolitenessTracker::get() {
-  static auto instance{std::shared_ptr<PolitenessTracker>(new PolitenessTracker())};
+PolitenessTracker& PolitenessTracker::get() {
+  static PolitenessTracker instance;
   return instance;
 }
 
@@ -41,7 +41,7 @@ bool PolitenessTracker::domainIsLocked(const std::string& domain) {
 }
 
 const services::url::RobotsTxtRepr& PolitenessTracker::getRobotsTxt(const types::URL& url) {
-  std::string fullHost{getFullHostname(url)};
+  std::string fullHost{url.host()};
 
   // Check if we already have robots.txt for this domain
   auto it{robotsTxtLookup_.find(fullHost)};
@@ -121,9 +121,7 @@ DomainStatus PolitenessTracker::handleURL(const types::URL& url) {
       }
 
       // set a delay for release
-      auto self{shared_from_this()};
-
-      delayPool_.enqueue<false>([self, domain = fullHost, seconds = seconds]() mutable -> boost::asio::awaitable<void> {
+      delayPool_.enqueue<false>([this, domain = fullHost, seconds = seconds]() mutable -> boost::asio::awaitable<void> {
 
         // wait for specified amount of time
         co_await boost::asio::steady_timer(
@@ -131,8 +129,8 @@ DomainStatus PolitenessTracker::handleURL(const types::URL& url) {
         ).async_wait(boost::asio::use_awaitable);
 
         // remove domain from locked set
-        std::unique_lock<std::shared_mutex> freeLock(self->lockedDomainsMutex_);
-        self->lockedDomain_.erase(domain);
+        std::unique_lock<std::shared_mutex> freeLock(this->lockedDomainsMutex_);
+        this->lockedDomain_.erase(domain);
 
         co_return;
       });

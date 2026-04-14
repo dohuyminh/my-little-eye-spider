@@ -22,7 +22,7 @@ enum class DomainStatus {
 class PolitenessTracker : public std::enable_shared_from_this<PolitenessTracker> {
 public:
 
-  static std::shared_ptr<PolitenessTracker> get();
+  static PolitenessTracker& get();
 
   bool domainIsLocked(const std::string& domain);
 
