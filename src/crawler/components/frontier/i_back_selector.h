@@ -9,6 +9,8 @@ namespace crawler {
 
 namespace components {
 
+using StatelessBackSelector = std::tuple<>;
+
 class IBackSelector {
  public:
   using BackQueueContainer = MultiQueueContainers<StdQueueWrapper<types::URL>>;
@@ -18,6 +20,19 @@ class IBackSelector {
                                                std::size_t maxCount) = 0;
   virtual ~IBackSelector() = default;
 };
+
+using BackQueueContainer = MultiQueueContainers<StdQueueWrapper<types::URL>>;
+
+template <typename T>
+concept BackSelectorType =
+    requires(BackQueueContainer& bqueues, std::size_t maxCount) {
+      {
+        std::declval<T>().extract(bqueues)
+      } -> std::same_as<std::optional<types::URL>>;
+      {
+        std::declval<T>().extractBatch(bqueues, maxCount)
+      } -> std::same_as<std::vector<types::URL>>;
+    };
 
 }  // namespace components
 

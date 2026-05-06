@@ -8,7 +8,8 @@ namespace crawler {
 namespace types {
 
 URL::URL(std::string&& url) {
-  services::url::ParseResult<services::url::URLParseResult> result{services::url::parse(url)};
+  services::url::ParseResult<services::url::URLParseResult> result{
+      services::url::parse(url)};
 
   if (result.has_value()) {
     userinfo_ = std::move(result->userinfo);
@@ -25,7 +26,8 @@ URL::URL(std::string&& url) {
 }
 
 URL::URL(const std::string& url) {
-  services::url::ParseResult<services::url::URLParseResult> result{services::url::parse(url)};
+  services::url::ParseResult<services::url::URLParseResult> result{
+      services::url::parse(url)};
 
   if (result.has_value()) {
     userinfo_ = std::move(result->userinfo);
@@ -86,6 +88,22 @@ std::string URL::to_string() const {
   }
 
   return result;
+}
+
+std::string URL::host() const noexcept {
+  std::string fullHostName;
+
+  // Add subdomains back to get the full registered hostname
+  const auto& subdomains = subdomains_;
+  for (const auto& subdomain : subdomains) {
+    fullHostName.append(subdomain + ".");
+  }
+
+  // Use full hostname (including all subdomains) as key for consistency
+  // since some domains might have public suffixes registered for subdomains
+  fullHostName.append(domain_);
+
+  return fullHostName;
 }
 
 }  // namespace types

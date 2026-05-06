@@ -12,9 +12,6 @@ using namespace components;
 class Spider {
  public:
   void run() const;
-
- private:
-  Frontier frontier;
 };
 
 };  // namespace crawler

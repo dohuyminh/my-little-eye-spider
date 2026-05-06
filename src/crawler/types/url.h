@@ -41,11 +41,17 @@ class URL {
 
   const std::string& port() const noexcept { return port_; }
 
+  std::string host() const noexcept;
+
   std::string path() const noexcept;
 
   std::string root() const {
     std::string schemePrefix{scheme_.empty() ? "" : scheme_ + "://"};
     return schemePrefix + domain_ + "/";
+  }
+
+  const std::unordered_map<std::string, std::string>& queries() const noexcept {
+    return queryParams_;
   }
 
   std::optional<std::string> query(const std::string& key) const noexcept {
@@ -59,7 +65,7 @@ class URL {
   const std::string& fragment() const noexcept { return fragment_; }
 
   bool applyPath(const std::string& relativeURL) {
-    return services::url::parseAndApplyRelativeURL(relativeURL, path_); 
+    return services::url::parseAndApplyRelativeURL(relativeURL, path_);
   }
 
   std::string to_string() const;

@@ -16,7 +16,7 @@ namespace services {
 namespace url {
 
 bool parseAndApplyRelativeURL(const std::string& relativeURL,
-                      std::vector<std::string>& path) {
+                              std::vector<std::string>& path) {
   if (!isRelativeURL(relativeURL.c_str())) {
     return false;
   }
@@ -154,7 +154,7 @@ bool isRelativeURL(std::string_view url) {
   return false;
 }
 
-ParseResult<URLParseResult> parse(const std::string& url)  {
+ParseResult<URLParseResult> parse(const std::string& url) {
   URLParseResult result;
 
   constexpr char pattern[] =
@@ -361,13 +361,14 @@ ParseResult<RobotsTxtRepr> parseRobotsTxt(const std::string& content) {
 
   while (std::getline(ss, line)) {
     // trim whitespace at both left and right
-    line.erase(line.begin(), std::find_if(line.begin(), line.end(), [](unsigned char c) {
-      return !std::isspace(c);
-    }));
+    line.erase(line.begin(),
+               std::find_if(line.begin(), line.end(),
+                            [](unsigned char c) { return !std::isspace(c); }));
 
-    line.erase(std::find_if(line.rbegin(), line.rend(), [](unsigned char c) {
-      return !std::isspace(c);
-    }).base(), line.end());
+    line.erase(std::find_if(line.rbegin(), line.rend(),
+                            [](unsigned char c) { return !std::isspace(c); })
+                   .base(),
+               line.end());
 
     // if the line is empty or starts with a hash (#), it's a comment
     if (line.empty() || line.front() == '#') {
@@ -375,7 +376,8 @@ ParseResult<RobotsTxtRepr> parseRobotsTxt(const std::string& content) {
     }
 
     // Parse directive: value pairs
-    // Regex captures directive and value (stopping at #), optional trailing comment ignored
+    // Regex captures directive and value (stopping at #), optional trailing
+    // comment ignored
     std::string_view lineView{line};
     std::string_view directive, value;
     constexpr char pattern[]{R"(^([A-Za-z-]+)\s*:\s*([^#]*)(?:\s*#.*)?$)"};
@@ -385,14 +387,15 @@ ParseResult<RobotsTxtRepr> parseRobotsTxt(const std::string& content) {
     }
 
     // trim value
-    value.remove_prefix(std::distance(value.begin(),
-      std::find_if(value.begin(), value.end(), [](unsigned char c) {
-        return !std::isspace(c);
-      })));
+    value.remove_prefix(std::distance(
+        value.begin(),
+        std::find_if(value.begin(), value.end(),
+                     [](unsigned char c) { return !std::isspace(c); })));
     value.remove_suffix(std::distance(
-      std::find_if(value.rbegin(), value.rend(), [](unsigned char c) {
-        return !std::isspace(c);
-      }).base(), value.end()));
+        std::find_if(value.rbegin(), value.rend(),
+                     [](unsigned char c) { return !std::isspace(c); })
+            .base(),
+        value.end()));
 
     std::string directiveStr{directive};
     std::string valueStr{value};
@@ -460,7 +463,9 @@ bool urlIsDisallowed(const std::string& url, const std::string& pattern) {
 
   // Extract path (stop at ? or #)
   std::size_t pathEnd{urlView.find_first_of("?#", pathStart)};
-  std::string path{std::string{urlView.substr(pathStart, pathEnd == std::string_view::npos ? std::string_view::npos : pathEnd - pathStart)}};
+  std::string path{std::string{urlView.substr(
+      pathStart, pathEnd == std::string_view::npos ? std::string_view::npos
+                                                   : pathEnd - pathStart)}};
 
   // A pattern of "/" disallows everything
   if (pattern == "/") {
@@ -513,7 +518,6 @@ bool urlIsDisallowed(const std::string& url, const std::string& pattern) {
   // Match against path
   return RE2::FullMatch(path, regexPattern);
 }
-
 
 }  // namespace url
 

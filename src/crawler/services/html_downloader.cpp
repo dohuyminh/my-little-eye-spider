@@ -23,8 +23,9 @@ curl::Response Downloader::operator()(const types::URL& url) {
   curl_easy_setopt(handler, CURLOPT_WRITEFUNCTION, &Downloader::writeCallback);
   curl_easy_setopt(handler, CURLOPT_WRITEDATA, &response);
   curl_easy_setopt(handler, CURLOPT_TIMEOUT, 10L);
-  curl_easy_setopt(handler, CURLOPT_FOLLOWLOCATION, 1L);  // Follow HTTP redirects
-  curl_easy_setopt(handler, CURLOPT_MAXREDIRS, 5L);       // Max 5 redirects
+  curl_easy_setopt(handler, CURLOPT_FOLLOWLOCATION,
+                   1L);                              // Follow HTTP redirects
+  curl_easy_setopt(handler, CURLOPT_MAXREDIRS, 5L);  // Max 5 redirects
 
   CURLcode res{curl_easy_perform(handler)};
   if (res != CURLE_OK) {

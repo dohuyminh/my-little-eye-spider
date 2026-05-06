@@ -27,7 +27,7 @@ enum class ParseError {
   AUTHORITY_ERROR,
   PATH_ERROR,
   QUERY_ERROR,
-  FRAGMENT_ERROR, 
+  FRAGMENT_ERROR,
   ROBOTS_TXT_ERROR
 };
 
@@ -56,15 +56,15 @@ concept StringLike = requires(const T& t) {
 };
 
 // Percent encoding/decoding (defined in url.cpp, must be inline for templates)
-inline std::string percentEncode(const StringLike auto& src, char ignore = '\0');
+inline std::string percentEncode(const StringLike auto& src,
+                                 char ignore = '\0');
 inline std::string percentDecode(const StringLike auto& src);
 inline bool isPercentEncoded(const StringLike auto& str);
 
 constexpr bool isAscii(char c) { return static_cast<unsigned char>(c) <= 127; }
 
-
 bool parseAndApplyRelativeURL(const std::string& relativeURL,
-                      std::vector<std::string>& path);
+                              std::vector<std::string>& path);
 
 /**
  * Validates if a string is a valid relative URL.
@@ -102,8 +102,8 @@ inline std::string percentEncode(const StringLike auto& src, char ignore) {
 
   for (unsigned char c : src) {
     if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-        (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~' ||
-        c == ignore) {
+        (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' ||
+        c == '~' || c == ignore) {
       result.push_back(c);
     } else {
       result.push_back('%');
