@@ -14,7 +14,7 @@ class DefaultFrontSelector {
   using FrontQueueContainer = components::MultiQueueContainers<
       components::MoodyCamelConcurrentQueueWrapper<types::URL>>;
 
-  using StateUpdatePacket = std::tuple<std::size_t, double>; 
+  using StateUpdatePacket = std::tuple<std::size_t, double>;
 
   DefaultFrontSelector(std::size_t numArms = 4, double gamma = 0.1);
 

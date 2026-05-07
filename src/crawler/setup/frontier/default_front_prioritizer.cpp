@@ -16,15 +16,15 @@ DefaultFrontPrioritizer::DefaultFrontPrioritizer(double significantPercent)
   }
 }
 
-std::pair<types::URL, std::size_t> DefaultFrontPrioritizer::selectQueue(
-    const std::string& url) {
+std::pair<types::URL, std::vector<std::size_t>>
+DefaultFrontPrioritizer::selectQueue(const std::string& url) {
   types::URL urlObj{url};
 
   {
     std::shared_lock<std::shared_mutex> lookupLock{domainLookupMutex_};
     if (!seenDomains_.count(urlObj.domain())) {
       return {urlObj,
-              static_cast<std::size_t>(QueueCategory::UNEXPLORED_DOMAINS)};
+              {static_cast<std::size_t>(QueueCategory::UNEXPLORED_DOMAINS)}};
     }
   }
 
@@ -32,13 +32,12 @@ std::pair<types::URL, std::size_t> DefaultFrontPrioritizer::selectQueue(
     std::unique_lock<std::shared_mutex> insertLock{domainLookupMutex_};
     if (!seenDomains_.count(urlObj.domain())) {
       return {urlObj,
-              static_cast<std::size_t>(QueueCategory::UNEXPLORED_DOMAINS)};
+              {static_cast<std::size_t>(QueueCategory::UNEXPLORED_DOMAINS)}};
     }
     seenDomains_.insert(urlObj.domain());
   }
 
-  std::pair<types::URL, std::size_t> result{
-      urlObj, static_cast<std::size_t>(QueueCategory::SHALLOW_URLS)};
+  std::pair<types::URL, std::vector<std::size_t>> result{urlObj, {}};
 
   std::size_t currentGreatestDepth{longestURLDepth_.load()};
   std::size_t currentGreatestNumQueries{mostQueryParams_.load()};
@@ -52,12 +51,12 @@ std::pair<types::URL, std::size_t> DefaultFrontPrioritizer::selectQueue(
   std::size_t urlDepth{urlObj.path().size()};
 
   if (urlDepth > urlDepthThreshold) {
-    result.second = static_cast<std::size_t>(QueueCategory::DEEP_URLS);
+    result.second.push_back(static_cast<std::size_t>(QueueCategory::DEEP_URLS));
   }
 
   else if (urlNumQueries > urlNumQueriesThreshold) {
-    result.second =
-        static_cast<std::size_t>(QueueCategory::PARAMETER_HEAVY_URLS);
+    result.second.push_back(
+        static_cast<std::size_t>(QueueCategory::PARAMETER_HEAVY_URLS));
   }
 
   std::size_t prevGreatestNumQueries{currentGreatestNumQueries};

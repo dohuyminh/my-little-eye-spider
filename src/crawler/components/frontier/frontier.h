@@ -1,5 +1,6 @@
 #pragma once
 
+#include <concepts>
 #include <memory>
 #include <type_traits>
 #include <vector>
@@ -32,7 +33,12 @@ struct DataType {
 
 template <FrontPrioritizerType FrontPrioritizer,
           FrontSelectorType FrontSelector, BackRouterType BackRouter,
-          BackSelectorType BackSelector>
+          BackSelectorType BackSelector, typename UpdateBusType = NoBus>
+  requires(!IsStatefulConfig<FrontPrioritizer, FrontSelector, BackRouter,
+                             BackSelector> ||
+           (!std::same_as<UpdateBusType, NoBus> &&
+            ValidBusType<UpdateBusType, FrontPrioritizer, FrontSelector,
+                         BackRouter, BackSelector>))
 class Frontier : public types::Runnable {
  public:
   Frontier(
@@ -42,7 +48,9 @@ class Frontier : public types::Runnable {
       std::shared_ptr<FrontPrioritizer> frontPrioritizer,
       std::shared_ptr<FrontSelector> frontSelector,
       std::shared_ptr<BackRouter> backRouter,
-      std::shared_ptr<BackSelector> backSelector, std::size_t batchSize = 1)
+      std::shared_ptr<BackSelector> backSelector,
+      std::unique_ptr<UpdateBusType> updateBus = nullptr,
+      std::size_t batchSize = 1)
       : producingQueue_(producingQueue),
         consumingQueue_(consumingQueue),
         frontQueues_(numFrontQueues),
@@ -53,9 +61,7 @@ class Frontier : public types::Runnable {
         backSelector_(backSelector),
         batchSize_(batchSize > 0 ? batchSize : 1) {
     if constexpr (isStateful()) {
-      updateBus_ =
-          std::make_unique<UpdateQueueBus<FrontPrioritizer, FrontSelector,
-                                          BackRouter, BackSelector>>();
+      updateBus_ = std::move(updateBus);
       updateBus_->run();
     }
   }
@@ -67,7 +73,6 @@ class Frontier : public types::Runnable {
            StatefulFrontierComponent<BackSelector>;
   }
 
-  template <typename Dummy = void>
   void sendUpdate(
       const typename UpdateQueueBus<FrontPrioritizer, FrontSelector, BackRouter,
                                     BackSelector>::UpdatePacketType& pkt)
@@ -82,7 +87,9 @@ class Frontier : public types::Runnable {
   void insertToFrontQueue(const std::string& url) {
     try {
       auto [urlObj, queueIndex] = prioritizer_->selectQueue(url);
-      frontQueues_.enqueue(queueIndex, std::move(urlObj));
+      for (std::size_t i : queueIndex) {
+        frontQueues_.enqueue(i, std::move(urlObj));
+      }
     } catch (const std::invalid_argument& e) {
       // Ignore invalid URL
     }
@@ -155,9 +162,7 @@ class Frontier : public types::Runnable {
   // Frontier's components receive updates via the update bus
   // If the frontier is stateless, this object will not exist, and no background
   // thread is launched
-  std::unique_ptr<
-      UpdateQueueBus<FrontPrioritizer, FrontSelector, BackRouter, BackSelector>>
-      updateBus_{};
+  std::unique_ptr<UpdateBusType> updateBus_{};
 
   std::size_t batchSize_;
 };

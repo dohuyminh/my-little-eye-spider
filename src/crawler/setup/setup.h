@@ -7,6 +7,7 @@
 #include "frontier/default_front_prioritizer.h"
 #include "frontier/default_front_selector.h"
 #include "setup/frontier/default_back_selector.h"
+#include "setup/frontier/default_update_bus.h"
 #include "types/url.h"
 
 namespace crawler::setup {
@@ -24,6 +25,7 @@ auto configureFrontier() {
       .configureFrontSelector<DefaultFrontSelector>(4, 1)
       .configureBackRouter<DefaultBackRouter>(20)
       .configureBackSelector<DefaultBackSelector>()
+      .configureUpdateBus<DefaultUpdateBus>(10)
       .get();
 }
 

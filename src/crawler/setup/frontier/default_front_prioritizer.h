@@ -14,7 +14,8 @@ class DefaultFrontPrioritizer {
  public:
   DefaultFrontPrioritizer(double significantPercent = 0.7);
 
-  std::pair<types::URL, std::size_t> selectQueue(const std::string& url);
+  std::pair<types::URL, std::vector<std::size_t>> selectQueue(
+      const std::string& url);
 
  private:
   enum class QueueCategory : std::size_t {

@@ -30,6 +30,17 @@ concept StatefulFrontierComponent = requires {
   typename T::StateUpdatePacket;
 } && TupleInvocableUpdate<T, typename T::StateUpdatePacket>;
 
+template <typename FrontPrioritizer, typename FrontSelector,
+          typename BackRouter, typename BackSelector>
+concept IsStatefulConfig =
+    FrontPrioritizerType<FrontPrioritizer> &&
+    FrontSelectorType<FrontSelector> && BackRouterType<BackRouter> &&
+    BackSelectorType<BackSelector> &&
+    (StatefulFrontierComponent<FrontPrioritizer> ||
+     StatefulFrontierComponent<FrontSelector> ||
+     StatefulFrontierComponent<BackRouter> ||
+     StatefulFrontierComponent<BackSelector>);
+
 template <typename T, bool IsStateful = StatefulFrontierComponent<T>>
 struct PacketTypeImpl {
   using type = std::tuple<>;
@@ -118,13 +129,21 @@ class UpdateQueueBus : public types::Runnable {
             bsUpdateArgs);
       }
     }
+
+    modifyUpdateStatus();
   }
 
   virtual void insertUpdatePacket(const UpdatePacketType& pkt) {
     updateBus_.enqueue(pkt);
   }
 
+  std::size_t updateBatchSize() const noexcept { return updateBatchSize_; }
+
   virtual bool canUpdate() = 0;
+
+  virtual void modifyUpdateStatus() = 0;
+
+  virtual ~UpdateQueueBus() = default;
 
  private:
   moodycamel::ConcurrentQueue<UpdatePacketType> updateBus_;
@@ -140,6 +159,19 @@ class UpdateQueueBus : public types::Runnable {
   std::condition_variable updateCV_;
 };
 
+template <typename UpdateBusType, typename FrontPrioritizer,
+          typename FrontSelector, typename BackRouter, typename BackSelector>
+concept ValidBusType =
+    FrontPrioritizerType<FrontPrioritizer> &&
+    FrontSelectorType<FrontSelector> && BackRouterType<BackRouter> &&
+    BackSelectorType<BackSelector> &&
+    IsStatefulConfig<FrontPrioritizer, FrontSelector, BackRouter,
+                     BackSelector> &&
+    std::derived_from<UpdateBusType,
+                      UpdateQueueBus<FrontPrioritizer, FrontSelector,
+                                     BackRouter, BackSelector>>;
+
+class NoBus {};
 }  // namespace components
 
 }  // namespace crawler

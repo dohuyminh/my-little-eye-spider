@@ -22,7 +22,7 @@ template <typename T>
 concept FrontPrioritizerType = requires(const std::string& url) {
   {
     std::declval<T>().selectQueue(url)
-  } -> std::same_as<std::pair<types::URL, std::size_t>>;
+  } -> std::same_as<std::pair<types::URL, std::vector<std::size_t>>>;
 };
 
 }  // namespace components
