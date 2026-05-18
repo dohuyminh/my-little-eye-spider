@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "types/url.h"
+#include "valid_queue_return.h"
 
 namespace crawler {
 
@@ -18,12 +19,13 @@ class IFrontPrioritizer {
   virtual ~IFrontPrioritizer() = default;
 };
 
-template <typename T>
-concept FrontPrioritizerType = requires(const std::string& url) {
-  {
-    std::declval<T>().selectQueue(url)
-  } -> std::same_as<std::pair<types::URL, std::vector<std::size_t>>>;
-};
+template <typename T, typename QDT>
+concept FrontPrioritizerType =
+    ValidQueueDataType<QDT> && requires(const std::string& url) {
+      {
+        std::declval<T>().selectQueue(url)
+      } -> std::same_as<std::pair<QDT, std::vector<std::size_t>>>;
+    };
 
 }  // namespace components
 

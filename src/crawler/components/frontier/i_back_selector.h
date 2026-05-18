@@ -4,6 +4,7 @@
 
 #include "multiqueue_containers.h"
 #include "types/url.h"
+#include "valid_queue_return.h"
 
 namespace crawler {
 
@@ -23,15 +24,16 @@ class IBackSelector {
 
 using BackQueueContainer = MultiQueueContainers<StdQueueWrapper<types::URL>>;
 
-template <typename T>
+template <typename T, typename QDT>
 concept BackSelectorType =
+    ValidQueueDataType<QDT> &&
     requires(BackQueueContainer& bqueues, std::size_t maxCount) {
       {
         std::declval<T>().extract(bqueues)
-      } -> std::same_as<std::optional<types::URL>>;
+      } -> std::same_as<std::optional<QDT>>;
       {
         std::declval<T>().extractBatch(bqueues, maxCount)
-      } -> std::same_as<std::vector<types::URL>>;
+      } -> std::same_as<std::vector<QDT>>;
     };
 
 }  // namespace components

@@ -2,7 +2,6 @@
 
 #include <concepts>
 #include <memory>
-#include <type_traits>
 #include <vector>
 
 #include "components/frontier/frontier_state.h"
@@ -12,35 +11,30 @@
 #include "i_front_selector.h"
 #include "multiqueue_containers.h"
 #include "types/runnable.h"
+#include "types/url.h"
 
 namespace crawler {
 
 namespace components {
 
-template <FrontPrioritizerType FrontPrioritizer,
-          FrontSelectorType FrontSelector, BackRouterType BackRouter,
-          BackSelectorType BackSelector>
-struct DataType {
-  using type = std::conditional<
-      StatefulFrontierComponent<FrontPrioritizer> ||
-          StatefulFrontierComponent<FrontSelector> ||
-          StatefulFrontierComponent<BackRouter> ||
-          StatefulFrontierComponent<BackSelector>,
-      typename UpdateQueueBus<FrontPrioritizer, FrontSelector, BackRouter,
-                              BackSelector>::UpdatePacketType,
-      void>;
-};
-
-template <FrontPrioritizerType FrontPrioritizer,
-          FrontSelectorType FrontSelector, BackRouterType BackRouter,
-          BackSelectorType BackSelector, typename UpdateBusType = NoBus>
-  requires(!IsStatefulConfig<FrontPrioritizer, FrontSelector, BackRouter,
-                             BackSelector> ||
-           (!std::same_as<UpdateBusType, NoBus> &&
-            ValidBusType<UpdateBusType, FrontPrioritizer, FrontSelector,
-                         BackRouter, BackSelector>))
+template <typename QDT, typename FrontPrioritizer, typename FrontSelector,
+          typename BackRouter, typename BackSelector,
+          typename UpdateBusType = NoBus>
+  requires(FrontPrioritizerType<FrontPrioritizer, QDT> &&
+           FrontSelectorType<FrontSelector, QDT> &&
+           BackRouterType<BackRouter, QDT> &&
+           BackSelectorType<BackSelector, QDT> &&
+           (!IsStatefulConfig<FrontPrioritizer, FrontSelector, BackRouter,
+                              BackSelector, QDT> ||
+            (!std::same_as<UpdateBusType, NoBus> &&
+             ValidBusType<UpdateBusType, FrontPrioritizer, FrontSelector,
+                          BackRouter, BackSelector, QDT>)))
 class Frontier : public types::Runnable {
  public:
+  using UpdatePacketType =
+      typename UpdateQueueBus<FrontPrioritizer, FrontSelector, BackRouter,
+                              BackSelector, QDT>::UpdatePacketType;
+
   Frontier(
       std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue,
       std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue,
@@ -75,7 +69,7 @@ class Frontier : public types::Runnable {
 
   void sendUpdate(
       const typename UpdateQueueBus<FrontPrioritizer, FrontSelector, BackRouter,
-                                    BackSelector>::UpdatePacketType& pkt)
+                                    BackSelector, QDT>::UpdatePacketType& pkt)
     requires(StatefulFrontierComponent<FrontPrioritizer> ||
              StatefulFrontierComponent<FrontSelector> ||
              StatefulFrontierComponent<BackRouter> ||
@@ -88,7 +82,7 @@ class Frontier : public types::Runnable {
     try {
       auto [urlObj, queueIndex] = prioritizer_->selectQueue(url);
       for (std::size_t i : queueIndex) {
-        frontQueues_.enqueue(i, std::move(urlObj));
+        frontQueues_.enqueue(i, urlObj);
       }
     } catch (const std::invalid_argument& e) {
       // Ignore invalid URL

@@ -46,13 +46,13 @@ class TemplateFrontierBuilder {
   }
 
   template <FrontPrioritizerType U, typename... Args>
-  auto configurePrioritizer(Args&&... args) 
+  auto configurePrioritizer(Args&&... args)
     requires(std::is_constructible_v<U, Args...>)
   {
     return TemplateFrontierBuilder<U, FSType, BRType, BSType, BusType>(
         std::make_shared<U>(std::forward<Args>(args)...), frontSelector_,
-        backRouter_, backSelector_, producingQueue_, consumingQueue_, std::move(bus_),
-        frontQueuesSize_, backQueuesSize_, batchSize_);
+        backRouter_, backSelector_, producingQueue_, consumingQueue_,
+        std::move(bus_), frontQueuesSize_, backQueuesSize_, batchSize_);
   }
 
   template <FrontSelectorType U>
@@ -64,13 +64,13 @@ class TemplateFrontierBuilder {
   }
 
   template <FrontSelectorType U, typename... Args>
-  auto configureFrontSelector(Args&&... args) 
+  auto configureFrontSelector(Args&&... args)
     requires(std::is_constructible_v<U, Args...>)
   {
     return TemplateFrontierBuilder<FPType, U, BRType, BSType, BusType>(
         frontPrioritizer_, std::make_shared<U>(std::forward<Args>(args)...),
-        backRouter_, backSelector_, producingQueue_, consumingQueue_, std::move(bus_),
-        frontQueuesSize_, backQueuesSize_, batchSize_);
+        backRouter_, backSelector_, producingQueue_, consumingQueue_,
+        std::move(bus_), frontQueuesSize_, backQueuesSize_, batchSize_);
   }
 
   template <BackRouterType U>
@@ -82,7 +82,7 @@ class TemplateFrontierBuilder {
   }
 
   template <BackRouterType U, typename... Args>
-  auto configureBackRouter(Args&&... args) 
+  auto configureBackRouter(Args&&... args)
     requires(std::is_constructible_v<U, Args...>)
   {
     return TemplateFrontierBuilder<FPType, FSType, U, BSType, BusType>(
@@ -101,13 +101,14 @@ class TemplateFrontierBuilder {
   }
 
   template <BackSelectorType U, typename... Args>
-  auto configureBackSelector(Args&&... args) 
+  auto configureBackSelector(Args&&... args)
     requires(std::is_constructible_v<U, Args...>)
   {
     return TemplateFrontierBuilder<FPType, FSType, BRType, U, BusType>(
         frontPrioritizer_, frontSelector_, backRouter_,
         std::make_shared<U>(std::forward<Args>(args)...), producingQueue_,
-        consumingQueue_, std::move(bus_), frontQueuesSize_, backQueuesSize_, batchSize_);
+        consumingQueue_, std::move(bus_), frontQueuesSize_, backQueuesSize_,
+        batchSize_);
   }
 
   auto& configureProducingQueue(
@@ -120,7 +121,7 @@ class TemplateFrontierBuilder {
       std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> queue) {
     consumingQueue_ = std::move(queue);
     return *this;
-}
+  }
 
   auto& configureNumFrontQueues(std::size_t numQueues) {
     frontQueuesSize_ = numQueues;
@@ -138,8 +139,7 @@ class TemplateFrontierBuilder {
   }
 
   template <typename U, typename... AdditionalArgs>
-  auto configureUpdateBus(std::size_t updateBatchSize,
-                          AdditionalArgs&&... args) 
+  auto configureUpdateBus(std::size_t updateBatchSize, AdditionalArgs&&... args)
     requires(ValidBusType<U, FPType, FSType, BRType, BSType> &&
              std::constructible_from<
                  U, std::shared_ptr<FPType>, std::shared_ptr<FSType>,

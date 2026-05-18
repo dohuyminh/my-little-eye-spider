@@ -2,6 +2,7 @@
 
 #include <moodycamel/concurrentqueue.h>
 
+#include <concepts>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
@@ -31,11 +32,11 @@ concept StatefulFrontierComponent = requires {
 } && TupleInvocableUpdate<T, typename T::StateUpdatePacket>;
 
 template <typename FrontPrioritizer, typename FrontSelector,
-          typename BackRouter, typename BackSelector>
+          typename BackRouter, typename BackSelector, typename QDT>
 concept IsStatefulConfig =
-    FrontPrioritizerType<FrontPrioritizer> &&
-    FrontSelectorType<FrontSelector> && BackRouterType<BackRouter> &&
-    BackSelectorType<BackSelector> &&
+    FrontPrioritizerType<FrontPrioritizer, QDT> &&
+    FrontSelectorType<FrontSelector, QDT> && BackRouterType<BackRouter, QDT> &&
+    BackSelectorType<BackSelector, QDT> &&
     (StatefulFrontierComponent<FrontPrioritizer> ||
      StatefulFrontierComponent<FrontSelector> ||
      StatefulFrontierComponent<BackRouter> ||
@@ -54,8 +55,11 @@ struct PacketTypeImpl<T, true> {
 template <typename T>
 using PacketType = typename PacketTypeImpl<T>::type;
 
-template <FrontPrioritizerType FPType, FrontSelectorType FSType,
-          BackRouterType BRType, BackSelectorType BSType>
+template <typename FPType, typename FSType, typename BRType, typename BSType,
+          typename QDT>
+  requires FrontPrioritizerType<FPType, QDT> &&
+           FrontSelectorType<FSType, QDT> && BackRouterType<BRType, QDT> &&
+           BackSelectorType<BSType, QDT>
 class UpdateQueueBus : public types::Runnable {
  public:
   using FPPacketType = PacketType<FPType>;
@@ -159,17 +163,27 @@ class UpdateQueueBus : public types::Runnable {
   std::condition_variable updateCV_;
 };
 
+template <typename QDT, typename FrontPrioritizer, typename FrontSelector,
+          typename BackRouter, typename BackSelector>
+concept ValidStatefulQueueDataType =
+    IsStatefulConfig<FrontPrioritizer, FrontSelector, BackRouter, BackSelector,
+                     QDT> &&
+    requires(QDT t) {
+      {
+        t.updateCtx()
+      } -> std::convertible_to<
+            std::tuple<PacketType<FrontPrioritizer>, PacketType<FrontSelector>,
+                       PacketType<BackRouter>, PacketType<BackSelector>>>;
+    };
+
 template <typename UpdateBusType, typename FrontPrioritizer,
-          typename FrontSelector, typename BackRouter, typename BackSelector>
+          typename FrontSelector, typename BackRouter, typename BackSelector,
+          typename QDT>
 concept ValidBusType =
-    FrontPrioritizerType<FrontPrioritizer> &&
-    FrontSelectorType<FrontSelector> && BackRouterType<BackRouter> &&
-    BackSelectorType<BackSelector> &&
-    IsStatefulConfig<FrontPrioritizer, FrontSelector, BackRouter,
-                     BackSelector> &&
+    ValidStatefulQueueDataType<QDT, FrontPrioritizer, FrontSelector, BackRouter, BackSelector> &&
     std::derived_from<UpdateBusType,
                       UpdateQueueBus<FrontPrioritizer, FrontSelector,
-                                     BackRouter, BackSelector>>;
+                                     BackRouter, BackSelector, QDT>>;
 
 class NoBus {};
 }  // namespace components
