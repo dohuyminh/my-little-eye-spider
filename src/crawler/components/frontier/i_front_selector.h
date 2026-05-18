@@ -25,13 +25,14 @@ class IFrontSelector {
   virtual ~IFrontSelector() = default;
 };
 
+template <typename QDT>
 using FrontQueueContainer =
-    MultiQueueContainers<MoodyCamelConcurrentQueueWrapper<types::URL>>;
+    MultiQueueContainers<MoodyCamelConcurrentQueueWrapper<QDT>>;
 
 template <typename T, typename QDT>
 concept FrontSelectorType =
     ValidQueueDataType<QDT> &&
-    requires(FrontQueueContainer& fqueues, std::size_t maxCount) {
+    requires(FrontQueueContainer<QDT>& fqueues, std::size_t maxCount) {
       {
         std::declval<T>().extract(fqueues)
       } -> std::same_as<std::optional<QDT>>;

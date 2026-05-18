@@ -22,12 +22,13 @@ class IBackSelector {
   virtual ~IBackSelector() = default;
 };
 
-using BackQueueContainer = MultiQueueContainers<StdQueueWrapper<types::URL>>;
+template <typename QDT>
+using BackQueueContainer = MultiQueueContainers<StdQueueWrapper<QDT>>;
 
 template <typename T, typename QDT>
 concept BackSelectorType =
     ValidQueueDataType<QDT> &&
-    requires(BackQueueContainer& bqueues, std::size_t maxCount) {
+    requires(BackQueueContainer<QDT>& bqueues, std::size_t maxCount) {
       {
         std::declval<T>().extract(bqueues)
       } -> std::same_as<std::optional<QDT>>;

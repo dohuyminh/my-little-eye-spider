@@ -126,8 +126,8 @@ class Frontier : public types::Runnable {
 
  private:
   using FrontQueueContainer =
-      MultiQueueContainers<MoodyCamelConcurrentQueueWrapper<types::URL>>;
-  using BackQueueContainer = MultiQueueContainers<StdQueueWrapper<types::URL>>;
+      MultiQueueContainers<MoodyCamelConcurrentQueueWrapper<QDT>>;
+  using BackQueueContainer = MultiQueueContainers<StdQueueWrapper<QDT>>;
 
   // front and back queues
   FrontQueueContainer frontQueues_;
