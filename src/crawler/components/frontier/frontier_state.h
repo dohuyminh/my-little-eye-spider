@@ -180,7 +180,8 @@ template <typename UpdateBusType, typename FrontPrioritizer,
           typename FrontSelector, typename BackRouter, typename BackSelector,
           typename QDT>
 concept ValidBusType =
-    ValidStatefulQueueDataType<QDT, FrontPrioritizer, FrontSelector, BackRouter, BackSelector> &&
+    ValidStatefulQueueDataType<QDT, FrontPrioritizer, FrontSelector, BackRouter,
+                               BackSelector> &&
     std::derived_from<UpdateBusType,
                       UpdateQueueBus<FrontPrioritizer, FrontSelector,
                                      BackRouter, BackSelector, QDT>>;

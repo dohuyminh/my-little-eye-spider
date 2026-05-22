@@ -1,0 +1,5 @@
+# Test various whitespace handling
+User-Agent:   *
+Disallow:    /blocked/
+Allow:  /allowed/
+Crawl-delay:    15

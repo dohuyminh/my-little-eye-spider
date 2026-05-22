@@ -4,7 +4,7 @@
 #include <shared_mutex>
 #include <unordered_set>
 
-#include "types/url.h"
+#include "setup/frontier/default_frontier_return_type.h"
 
 namespace crawler {
 
@@ -14,7 +14,7 @@ class DefaultFrontPrioritizer {
  public:
   DefaultFrontPrioritizer(double significantPercent = 0.7);
 
-  std::pair<types::URL, std::vector<std::size_t>> selectQueue(
+  std::pair<DefaultFrontierReturnType, std::vector<std::size_t>> selectQueue(
       const std::string& url);
 
  private:

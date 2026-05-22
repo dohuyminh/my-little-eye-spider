@@ -3,7 +3,7 @@
 #include <random>
 
 #include "components/frontier/multiqueue_containers.h"
-#include "types/url.h"
+#include "setup/frontier/default_frontier_return_type.h"
 
 namespace crawler {
 
@@ -12,15 +12,16 @@ namespace setup {
 class DefaultFrontSelector {
  public:
   using FrontQueueContainer = components::MultiQueueContainers<
-      components::MoodyCamelConcurrentQueueWrapper<types::URL>>;
+      components::MoodyCamelConcurrentQueueWrapper<DefaultFrontierReturnType>>;
 
   using StateUpdatePacket = std::tuple<std::size_t, double>;
 
   DefaultFrontSelector(std::size_t numArms = 4, double gamma = 0.1);
 
-  std::optional<types::URL> extract(FrontQueueContainer& frontQueues);
-  std::vector<types::URL> extractBatch(FrontQueueContainer& frontQueues,
-                                       std::size_t maxCount);
+  std::optional<DefaultFrontierReturnType> extract(
+      FrontQueueContainer& frontQueues);
+  std::vector<DefaultFrontierReturnType> extractBatch(
+      FrontQueueContainer& frontQueues, std::size_t maxCount);
 
   void update(std::size_t arm, double reward);
 

@@ -1,10 +1,11 @@
 #include "default_back_selector.h"
 
 #include "politeness_tracker.h"
+#include "setup/frontier/default_frontier_return_type.h"
 
 namespace crawler::setup {
 
-std::optional<types::URL> DefaultBackSelector::extract(
+std::optional<DefaultFrontierReturnType> DefaultBackSelector::extract(
     BackQueueContainer& containers) {
   // Implementation for extracting URL from the back of the queue
   // Example: Round-robin style for extracting URLs
@@ -14,7 +15,7 @@ std::optional<types::URL> DefaultBackSelector::extract(
       ptr_ = (ptr_ + 1) % containers.numQueues();
 
       // check if domain is allowed/ready to be crawled
-      if (PolitenessTracker::get().handleURL(elem.value()) ==
+      if (PolitenessTracker::get().handleURL(elem->url()) ==
           DomainStatus::ALLOWED) {
         return elem;
       }
@@ -24,10 +25,10 @@ std::optional<types::URL> DefaultBackSelector::extract(
   return std::nullopt;
 }
 
-std::vector<types::URL> DefaultBackSelector::extractBatch(
+std::vector<DefaultFrontierReturnType> DefaultBackSelector::extractBatch(
     BackQueueContainer& containers, size_t max_urls) {
   // Implementation for extracting a batch of URLs from the back of the queue
-  std::vector<types::URL> batch;
+  std::vector<DefaultFrontierReturnType> batch;
   for (size_t i = 0; i < max_urls; ++i) {
     auto url = extract(containers);
     if (!url) {

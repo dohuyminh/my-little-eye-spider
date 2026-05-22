@@ -1,7 +1,9 @@
 .venv
 .vscode
 .cache
+.clangd
 build
+build_test
 diagrams
 docs
 CMakeUserPresets.json

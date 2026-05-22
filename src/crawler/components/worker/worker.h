@@ -1,29 +1,43 @@
 #pragma once
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 
+#include "../frontier/frontier.h"
 #include "moodycamel/concurrentqueue.h"
-#include "types/url.h"
 
 namespace crawler {
 
 namespace components {
 
+template <typename Test, template <typename...> typename Ref>
+struct IsSpecialization : std::false_type {};
+
+template <template <typename...> typename Ref, typename... Args>
+struct IsSpecialization<Ref<Args...>, Ref> : std::true_type {};
+
+template <typename T>
+concept FrontierType = IsSpecialization<T, Frontier>::value;
+
+template <FrontierType F>
 class Worker {
  public:
   Worker(
       std::shared_ptr<moodycamel::ConcurrentQueue<std::string>> producingURLs,
-      types::URL&& url);
+      F& frontier)
+      : producingURLs_(producingURLs), frontier_(frontier) {}
 
-  void doWork();
+  virtual void doWork() = 0;
 
- private:
-  types::URL url_;
+  void assignData(typename F::DataType&& data) { data_ = std::move(data); }
+
+ protected:
+  F::DataType data_;
 
   std::shared_ptr<moodycamel::ConcurrentQueue<std::string>> producingURLs_;
 
-  // for printing purposes; remove later
-  static std::mutex printMutex_;
+  F& frontier_;
 };
 
 }  // namespace components

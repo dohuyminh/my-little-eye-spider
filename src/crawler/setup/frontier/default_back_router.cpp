@@ -9,8 +9,8 @@ DefaultBackRouter::DefaultBackRouter(std::size_t numQueues)
   }
 }
 
-std::size_t DefaultBackRouter::routeURL(const types::URL& url) {
-  return std::hash<std::string>{}(url.domain()) % numQueues_;
+std::size_t DefaultBackRouter::routeURL(const DefaultFrontierReturnType& url) {
+  return std::hash<std::string>{}(url.url().domain()) % numQueues_;
 }
 
 }  // namespace crawler::setup

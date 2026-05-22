@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types/url.h"
+#include "setup/frontier/default_frontier_return_type.h"
 
 namespace crawler {
 
@@ -10,7 +10,7 @@ class DefaultBackRouter {
  public:
   DefaultBackRouter(std::size_t numQueues);
 
-  std::size_t routeURL(const types::URL& url);
+  std::size_t routeURL(const DefaultFrontierReturnType& url);
 
  private:
   std::size_t numQueues_;

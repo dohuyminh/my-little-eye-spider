@@ -1,0 +1,4 @@
+# No crawl-delay specified
+User-Agent: *
+Disallow: /tmp/
+Allow: /

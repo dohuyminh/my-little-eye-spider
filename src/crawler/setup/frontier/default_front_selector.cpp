@@ -13,7 +13,7 @@ DefaultFrontSelector::DefaultFrontSelector(std::size_t numArms, double gamma)
   }
 }
 
-std::optional<types::URL> DefaultFrontSelector::extract(
+std::optional<DefaultFrontierReturnType> DefaultFrontSelector::extract(
     FrontQueueContainer& frontQueues) {
   if (frontQueues.numQueues() != numArms_) [[unlikely]] {
     throw std::invalid_argument(
@@ -26,14 +26,18 @@ std::optional<types::URL> DefaultFrontSelector::extract(
                                             armProbabilities_.end());
 
   lastArm_ = distribution(gen_);
-  std::optional<types::URL> url{frontQueues.dequeue(lastArm_)};
+  std::optional<DefaultFrontierReturnType> url{frontQueues.dequeue(lastArm_)};
+
+  if (url.has_value()) {
+    url->setArm(lastArm_);
+  }
 
   return url;
 }
 
-std::vector<types::URL> DefaultFrontSelector::extractBatch(
+std::vector<DefaultFrontierReturnType> DefaultFrontSelector::extractBatch(
     FrontQueueContainer& frontQueues, std::size_t batchSize) {
-  std::vector<types::URL> urls;
+  std::vector<DefaultFrontierReturnType> urls;
   for (std::size_t i = 0; i < batchSize; ++i) {
     auto url = extract(frontQueues);
     if (url.has_value()) {

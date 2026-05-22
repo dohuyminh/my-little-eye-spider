@@ -11,7 +11,6 @@
 #include "i_front_selector.h"
 #include "multiqueue_containers.h"
 #include "types/runnable.h"
-#include "types/url.h"
 
 namespace crawler {
 
@@ -35,9 +34,11 @@ class Frontier : public types::Runnable {
       typename UpdateQueueBus<FrontPrioritizer, FrontSelector, BackRouter,
                               BackSelector, QDT>::UpdatePacketType;
 
+  using DataType = QDT;
+
   Frontier(
-      std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue,
-      std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue,
+      std::shared_ptr<moodycamel::ConcurrentQueue<QDT>> producingQueue,
+      std::shared_ptr<moodycamel::ConcurrentQueue<std::string>> consumingQueue,
       std::size_t numFrontQueues, std::size_t numBackQueues,
       std::shared_ptr<FrontPrioritizer> frontPrioritizer,
       std::shared_ptr<FrontSelector> frontSelector,
@@ -89,18 +90,18 @@ class Frontier : public types::Runnable {
     }
   }
 
-  std::vector<types::URL> popFrontBatch(std::size_t maxCount) {
+  std::vector<QDT> popFrontBatch(std::size_t maxCount) {
     return frontSelector_->extractBatch(frontQueues_, maxCount);
   }
 
-  void insertToBackQueue(const std::vector<types::URL>& urls) {
-    for (const types::URL& url : urls) {
+  void insertToBackQueue(const std::vector<QDT>& urls) {
+    for (const QDT& url : urls) {
       std::size_t backQueueIndex = router_->routeURL(url);
       backQueues_.enqueue(backQueueIndex, url);
     }
   }
 
-  std::vector<types::URL> popBackBatch(std::size_t maxCount) {
+  std::vector<QDT> popBackBatch(std::size_t maxCount) {
     return backSelector_->extractBatch(backQueues_, maxCount);
   }
 
@@ -147,11 +148,11 @@ class Frontier : public types::Runnable {
 
   // Frontier is the producer of back queue URLs, to be consumed by worker
   // threads
-  std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> producingQueue_;
+  std::shared_ptr<moodycamel::ConcurrentQueue<QDT>> producingQueue_;
 
   // Frontier also consumes incoming URLs from the worker threads via front
   // queues
-  std::shared_ptr<moodycamel::ConcurrentQueue<types::URL>> consumingQueue_;
+  std::shared_ptr<moodycamel::ConcurrentQueue<std::string>> consumingQueue_;
 
   // Frontier's components receive updates via the update bus
   // If the frontier is stateless, this object will not exist, and no background

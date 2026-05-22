@@ -7,13 +7,14 @@
 #include "default_back_selector.h"
 #include "default_front_prioritizer.h"
 #include "default_front_selector.h"
+#include "setup/frontier/default_frontier_return_type.h"
 
 namespace crawler::setup {
 
 class DefaultUpdateBus
-    : public components::UpdateQueueBus<DefaultFrontPrioritizer,
-                                        DefaultFrontSelector, DefaultBackRouter,
-                                        DefaultBackSelector> {
+    : public components::UpdateQueueBus<
+          DefaultFrontPrioritizer, DefaultFrontSelector, DefaultBackRouter,
+          DefaultBackSelector, DefaultFrontierReturnType> {
  public:
   DefaultUpdateBus(std::shared_ptr<DefaultFrontPrioritizer> frontPrioritizer,
                    std::shared_ptr<DefaultFrontSelector> frontSelector,
@@ -30,9 +31,10 @@ class DefaultUpdateBus
   }
 
   void insertUpdatePacket(const UpdatePacketType& pkt) override {
-    components::UpdateQueueBus<DefaultFrontPrioritizer, DefaultFrontSelector,
-                               DefaultBackRouter,
-                               DefaultBackSelector>::insertUpdatePacket(pkt);
+    components::UpdateQueueBus<
+        DefaultFrontPrioritizer, DefaultFrontSelector, DefaultBackRouter,
+        DefaultBackSelector,
+        DefaultFrontierReturnType>::insertUpdatePacket(pkt);
     ++packetApproxCount_;
   }
 

@@ -2,9 +2,6 @@
 
 #include <curl/curl.h>
 
-#include <istream>
-#include <stdexcept>
-
 #include "curl_response.h"
 #include "types/url.h"
 

@@ -9,7 +9,8 @@ DefaultUpdateBus::DefaultUpdateBus(
     std::shared_ptr<DefaultBackSelector> backSelector,
     std::size_t updateBatchSize)
     : components::UpdateQueueBus<DefaultFrontPrioritizer, DefaultFrontSelector,
-                                 DefaultBackRouter, DefaultBackSelector>(
+                                 DefaultBackRouter, DefaultBackSelector,
+                                 DefaultFrontierReturnType>(
           frontPrioritizer, frontSelector, backRouter, backSelector,
           updateBatchSize) {}
 

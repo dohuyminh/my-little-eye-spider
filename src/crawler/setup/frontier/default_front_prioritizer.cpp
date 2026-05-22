@@ -5,6 +5,8 @@
 #include <shared_mutex>
 #include <stdexcept>
 
+#include "setup/frontier/default_frontier_return_type.h"
+
 namespace crawler::setup {
 
 DefaultFrontPrioritizer::DefaultFrontPrioritizer(double significantPercent)
@@ -16,7 +18,7 @@ DefaultFrontPrioritizer::DefaultFrontPrioritizer(double significantPercent)
   }
 }
 
-std::pair<types::URL, std::vector<std::size_t>>
+std::pair<DefaultFrontierReturnType, std::vector<std::size_t>>
 DefaultFrontPrioritizer::selectQueue(const std::string& url) {
   types::URL urlObj{url};
 
@@ -37,7 +39,8 @@ DefaultFrontPrioritizer::selectQueue(const std::string& url) {
     seenDomains_.insert(urlObj.domain());
   }
 
-  std::pair<types::URL, std::vector<std::size_t>> result{urlObj, {}};
+  std::pair<DefaultFrontierReturnType, std::vector<std::size_t>> result{
+      {urlObj}, {}};
 
   std::size_t currentGreatestDepth{longestURLDepth_.load()};
   std::size_t currentGreatestNumQueries{mostQueryParams_.load()};
