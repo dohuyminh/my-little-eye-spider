@@ -40,7 +40,9 @@ int main() {
 
     ParseResult result;
     try {
-      Response resp{Downloader()(url)};
+      auto oURL{crawler::types::URL{url}};
+      std::cout << oURL.domain() << '\n';
+      Response resp{Downloader()(oURL)};
       if (resp.code() != 200) {
         std::cerr << std::format("[HTTP] GET method returned code {}\n",
                                  resp.code());
@@ -50,6 +52,7 @@ int main() {
     } catch (std::runtime_error const& e) {
       std::cerr << std::format(
           "[HTTP] cannot perform GET request on URL \"{}\"\n", url);
+      std::cerr << e.what() << '\n';
       continue;
     }
 

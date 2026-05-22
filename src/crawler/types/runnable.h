@@ -1,7 +1,6 @@
 #pragma once
 
 #include <atomic>
-#include <mutex>
 #include <thread>
 
 namespace crawler {
@@ -16,16 +15,24 @@ class Runnable {
 
   virtual void runImpl() = 0;
 
-  bool isRunning() const noexcept { return isRunning_; }
+  bool isRunning() const noexcept { return isRunning_.load(); }
 
   virtual void stop();
 
-  ~Runnable() = default;
+  virtual ~Runnable() = default;
 
  private:
   std::thread eventLoopThread_;
-  std::mutex runMutex_;
-  bool isRunning_{false};
+  std::atomic<bool> isRunning_{false};
+};
+
+class RAIIRunnable {
+ public:
+  RAIIRunnable(std::unique_ptr<Runnable> runnable);
+  ~RAIIRunnable();
+
+ private:
+  std::unique_ptr<Runnable> runnable_;
 };
 
 }  // namespace types

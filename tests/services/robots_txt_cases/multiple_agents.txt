@@ -1,0 +1,15 @@
+# Multiple user-agent specifications
+# Only the * section should be parsed
+
+User-Agent: Googlebot
+Disallow: /no-google/
+Crawl-delay: 5
+
+User-Agent: *
+Disallow: /blocked/
+Allow: /allowed/
+Crawl-delay: 2
+
+User-Agent: Bingbot
+Disallow: /no-bing/
+Crawl-delay: 3

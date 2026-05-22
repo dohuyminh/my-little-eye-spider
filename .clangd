@@ -7,10 +7,14 @@
       "-Wpedantic"
     ]
   },
+  "CompilationDatabase": "build",
   "Index": {
     "Background": "Build"
   },
   "Completion": {
     "AllScopes": true
+  },
+  "InlayHints": {
+    "Enabled": true
   }
 }

@@ -14,11 +14,11 @@ This repository is for the web crawler to scrape URLs and their contents to stor
 
 For the web crawler:
 
-- Language: C++20
+- Language: C++23
 - Build generator: <a href="https://cmake.org/documentation/">CMake</a> $\geq3.18$
 - Package manager: Python 3 (for building with Conan), <a href="https://conan.io/">Conan 2.0</a>
 - Crawl state: <a href="https://www.scylladb.com/">ScyllaDB</a> (to be integrated)
-- URL storage: Postgresql + Elasticsearch (to be integrated)
+- URL storage: PostgreSQL (to be integrated)
 
 ## Building project:
 
@@ -34,7 +34,7 @@ $ mkdir build
 
 2. Install Conan:
 
-The project uses libraries that are listed in `conanfile.py`; to install the dependencies. To gather said dependencies, install Conan and run conanfile:
+The project uses libraries that are listed in `conanfile.py`; to install the dependencies, install Conan package manager.
 
 ```bash
 # create virtual environment for project
@@ -100,8 +100,7 @@ To build and run the code:
 # currently in build directory
 $ cmake .. \
     -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=1
+    -DCMAKE_BUILD_TYPE=Release 
 
 $ cmake --build build
 

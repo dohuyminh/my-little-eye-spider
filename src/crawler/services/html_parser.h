@@ -22,15 +22,17 @@ class ParseResult {
 };
 
 template <typename T>
-concept IHTMLParser = requires(T v, const std::string& url) {
-  { v.parse(url) } -> std::convertible_to<ParseResult>;
+concept IHTMLParser = requires(T v, const std::string& htmlString) {
+  { v.parse(htmlString) } -> std::convertible_to<ParseResult>;
 };
 
 template <IHTMLParser ParserType>
 class HTMLParser {
  public:
   HTMLParser() = default;
-  ParseResult parse(const std::string& url) { return parser_.parse(url); }
+  ParseResult parse(const std::string& htmlString) {
+    return parser_.parse(htmlString);
+  }
 
  private:
   ParserType parser_{};

@@ -1,0 +1,5 @@
+# Test trailing comments on directive lines
+User-Agent: *           # general crawler
+Disallow: /admin/       # admin area blocked
+Allow: /public/         # public area allowed
+Crawl-delay: 5          # wait 5 seconds

@@ -1,0 +1,7 @@
+# Basic robots.txt with general user-agent
+User-Agent: *
+Disallow: /admin/
+Disallow: /private/
+Allow: /public/
+Allow: /api/docs
+Crawl-delay: 10

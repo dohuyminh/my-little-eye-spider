@@ -3,8 +3,9 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
-#include <utility>
 #include <vector>
+
+#include "services/url.h"
 
 namespace crawler {
 
@@ -40,10 +41,21 @@ class URL {
 
   const std::string& port() const noexcept { return port_; }
 
-  const std::string& path() const noexcept { return path_; }
+  std::string host() const noexcept;
+
+  std::string path() const noexcept;
+
+  std::string root() const {
+    std::string schemePrefix{scheme_.empty() ? "" : scheme_ + "://"};
+    return schemePrefix + domain_ + "/";
+  }
+
+  const std::unordered_map<std::string, std::string>& queries() const noexcept {
+    return queryParams_;
+  }
 
   std::optional<std::string> query(const std::string& key) const noexcept {
-    auto it = queryParams_.find(key);
+    auto it{queryParams_.find(key)};
     if (it != queryParams_.end()) {
       return it->second;
     }
@@ -52,7 +64,11 @@ class URL {
 
   const std::string& fragment() const noexcept { return fragment_; }
 
-  std::string to_string() const noexcept { return url_; }
+  bool applyPath(const std::string& relativeURL) {
+    return services::url::parseAndApplyRelativeURL(relativeURL, path_);
+  }
+
+  std::string to_string() const;
 
  private:
   std::string url_;
@@ -62,7 +78,7 @@ class URL {
   std::vector<std::string> subdomains_;
   std::string domain_;
   std::string port_;
-  std::string path_;
+  std::vector<std::string> path_;
   std::unordered_map<std::string, std::string> queryParams_;
   std::string fragment_;
 };
