@@ -1,13 +1,14 @@
 #include "url.h"
 
-#include <sched.h>
-
-#include <array>
 #include <cctype>
 #include <cstddef>
-#include <mutex>
 #include <stdexcept>
 #include <string_view>
+#include <unordered_map>
+
+#include "idn2.h"
+#include "libpsl.h"
+#include "re2/re2.h"
 
 namespace crawler {
 
@@ -15,8 +16,10 @@ namespace services {
 
 namespace url {
 
-bool parseAndApplyRelativeURL(const std::string& relativeURL,
-                              std::vector<std::string>& path) {
+bool parseAndApplyRelativeURL(
+    const std::string& relativeURL, std::vector<std::string>& path,
+    std::unordered_map<std::string, std::string>& queryParams,
+    std::string& fragment) {
   if (!isRelativeURL(relativeURL.c_str())) {
     return false;
   }
@@ -84,9 +87,19 @@ bool parseAndApplyRelativeURL(const std::string& relativeURL,
   return true;
 }
 
-bool isRelativeURL(std::string_view url) {
-  if (url.empty()) {
+bool isRelativeURL(std::string_view str) {
+  if (str.empty()) {
     return true;  // empty string is technically valid (no-op relative URL)
+  }
+
+  std::string_view url, queryParams, fragment;
+
+  constexpr char relativeReference[] {
+    R"(([^?#]*)(?:\?([^#]*))?(?:#(.*))?)"
+  };
+
+  if (!RE2::FullMatch(url, relativeReference, url, queryParams, fragment)) {
+    return false;
   }
 
   // Check for scheme pattern: letter+ followed by "://"
@@ -148,6 +161,15 @@ bool isRelativeURL(std::string_view url) {
         return true;  // invalid scheme char
       }
     }
+  }
+  
+  // query params: ensure there exists only k=v pairs
+  if (!queryParams.empty()) {
+
+  }
+  
+  if (!fragment.empty()) {
+
   }
 
   // Has valid scheme followed by "://" - this is an absolute URL
@@ -328,7 +350,7 @@ ParseResult<URLParseResult> parse(const std::string& url) {
   }
 
   // parse path
-  bool pathParse{parseAndApplyRelativeURL(path.data(), result.path)};
+  bool pathParse{parseAndApplyRelativeURL(path.data(), result.path, result.queryParams, result.fragment)};
   if (!pathParse) {
     return std::unexpected(ParseError::PATH_ERROR);
   }

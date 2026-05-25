@@ -65,7 +65,8 @@ class URL {
   const std::string& fragment() const noexcept { return fragment_; }
 
   bool applyPath(const std::string& relativeURL) {
-    return services::url::parseAndApplyRelativeURL(relativeURL, path_);
+    return services::url::parseAndApplyRelativeURL(relativeURL, path_,
+                                                   queryParams_, fragment_);
   }
 
   std::string to_string() const;

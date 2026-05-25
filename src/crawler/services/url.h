@@ -3,17 +3,11 @@
 #include <concepts>
 #include <expected>
 #include <nlohmann/json.hpp>
-#include <optional>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
-
-#include "idn2.h"
-#include "libpsl.h"
-#include "re2/re2.h"
 
 namespace crawler {
 
@@ -63,8 +57,10 @@ inline bool isPercentEncoded(const StringLike auto& str);
 
 constexpr bool isAscii(char c) { return static_cast<unsigned char>(c) <= 127; }
 
-bool parseAndApplyRelativeURL(const std::string& relativeURL,
-                              std::vector<std::string>& path);
+bool parseAndApplyRelativeURL(
+    const std::string& relativeURL, std::vector<std::string>& path,
+    std::unordered_map<std::string, std::string>& queryParams,
+    std::string& fragment);
 
 /**
  * Validates if a string is a valid relative URL.
