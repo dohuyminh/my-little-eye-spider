@@ -139,12 +139,12 @@ TEST(IsRelativeURLTest, ProtocolRelativeUrl) {
 
 TEST(IsRelativeURLTest, InvalidSchemeStart) {
   std::string_view input{"1http://example.com"};
-  EXPECT_TRUE(isRelativeURL(input));  // Invalid scheme start
+  EXPECT_FALSE(isRelativeURL(input));  // Contains ':' which is not allowed in path-noscheme first segment
 }
 
 TEST(IsRelativeURLTest, ColonNoSlashSlash) {
   std::string_view input{"foo:bar"};
-  EXPECT_TRUE(isRelativeURL(input));  // No ://, treated as relative
+  EXPECT_FALSE(isRelativeURL(input));  // Colon not allowed in segment-nz-nc per RFC 3986
 }
 
 // ============================================================================
@@ -209,47 +209,71 @@ TEST(ParseTest, MissingAuthority) {
 // ============================================================================
 
 TEST(parseAndApplyRelativeURLTest, EmptyRelativeUrl) {
-  std::vector<std::string> path{"/", "current", "path"};
+  std::vector<std::string> path{"/", "current/", "path/"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
   std::string relative{""};
-  bool result{parseAndApplyRelativeURL(relative, path)};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment)};
   EXPECT_TRUE(result);
   EXPECT_EQ(path.size(), 3);  // Unchanged
 }
 
 TEST(parseAndApplyRelativeURLTest, AbsolutePathFromRoot) {
-  std::vector<std::string> path{"/", "old", "dir"};
+  std::vector<std::string> path{"/", "old/", "dir/"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
   std::string relative{"/new/path"};
-  bool result{parseAndApplyRelativeURL(relative, path)};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment)};
   EXPECT_TRUE(result);
-  EXPECT_GE(path.size(), 1);
+  EXPECT_EQ(path.size(), 3);
   EXPECT_EQ(path[0], "/");
+  EXPECT_EQ(path[1], "new/");  // Segment with trailing slash
+  EXPECT_EQ(path[2], "path");  // Last segment without trailing slash
 }
 
 TEST(parseAndApplyRelativeURLTest, ParentDirectory) {
-  std::vector<std::string> path{"/", "current", "dir"};
+  std::vector<std::string> path{"/", "current/", "dir"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
   std::string relative{"../parent"};
-  bool result{parseAndApplyRelativeURL(relative, path)};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment)};
   EXPECT_TRUE(result);
+  // "../parent" pops "dir", then adds "parent"
+  EXPECT_EQ(path.size(), 3);
+  EXPECT_EQ(path[0], "/");
+  EXPECT_EQ(path[1], "current/");
+  EXPECT_EQ(path[2], "parent");
 }
 
 TEST(parseAndApplyRelativeURLTest, CurrentDirectory) {
   std::vector<std::string> path{"/", "current"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
   std::string relative{"./same"};
-  bool result{parseAndApplyRelativeURL(relative, path)};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment)};
   EXPECT_TRUE(result);
+  // "./same" adds "same" at the same level as current
+  EXPECT_EQ(path.size(), 3);
+  EXPECT_EQ(path[0], "/");
+  EXPECT_EQ(path[1], "current/");
+  EXPECT_EQ(path[2], "same");
 }
 
 TEST(parseAndApplyRelativeURLTest, CannotGoAboveRoot) {
   std::vector<std::string> path{"/"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
   std::string relative{"../above"};
-  bool result{parseAndApplyRelativeURL(relative, path)};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment)};
   EXPECT_FALSE(result);
 }
 
 TEST(parseAndApplyRelativeURLTest, RejectsAbsoluteUrl) {
   std::vector<std::string> path{"/", "current"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
   std::string relative{"http://example.com"};
-  bool result{parseAndApplyRelativeURL(relative, path)};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment)};
   EXPECT_FALSE(result);  // isRelativeURL returns false for absolute URLs
 }
 

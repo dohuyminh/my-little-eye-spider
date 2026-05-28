@@ -156,6 +156,75 @@ inline bool isPercentEncoded(const StringLike auto& str) {
   return percentDecode(str) != str;
 }
 
+constexpr bool isUnreserved(char c) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+         c == '-' || c == '_' || c == '.' || c == '~';
+}
+
+constexpr bool isSubdelim(char c) {
+  return c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' || c == ')' || c == '*' || c == '+' || c == ',' || c == ';' || c == '=';
+}
+
+constexpr bool isPChar(char c) {
+  return isUnreserved(c) || isSubdelim(c) || c == ':' || c == '@';
+}
+
+constexpr bool isPCharNC(char c) {
+  return isUnreserved(c) || isSubdelim(c) || c == '@';
+}
+
+// Helper functions for relative URL parsing
+/**
+ * Validate the path component of a relative reference
+ * Returns false if path starts with "//" (not supported)
+ */
+bool validatePathComponent(std::string_view pathStr);
+
+/**
+ * Apply path component to existing path vector
+ * Handles ".", "..", and normal segments
+ */
+bool applyPathComponent(std::string_view pathStr,
+                        std::vector<std::string>& path);
+
+/**
+ * Validate query component syntax
+ */
+bool validateQueryComponent(std::string_view queryStr);
+
+/**
+ * Apply query component (parse key-value pairs)
+ */
+bool applyQueryComponent(
+    std::string_view queryStr,
+    std::unordered_map<std::string, std::string>& queryParams);
+
+/**
+ * Validate fragment component syntax
+ */
+bool validateFragmentComponent(std::string_view fragmentStr);
+
+/**
+ * Apply fragment component
+ */
+bool applyFragmentComponent(std::string_view fragmentStr, std::string& fragment);
+
+/**
+ * Structure for parsed relative URL components
+ */
+struct RelativeURLComponents {
+  std::string_view path;
+  std::string_view query;
+  std::string_view fragment;
+  bool isValid;
+};
+
+/**
+ * Parse relative URL into components and validate each
+ */
+RelativeURLComponents parseRelativeURLComponents(
+    const std::string& relativeURL);
+
 }  // namespace url
 
 }  // namespace services
