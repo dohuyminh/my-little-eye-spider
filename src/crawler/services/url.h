@@ -157,12 +157,13 @@ inline bool isPercentEncoded(const StringLike auto& str) {
 }
 
 constexpr bool isUnreserved(char c) {
-  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
-         c == '-' || c == '_' || c == '.' || c == '~';
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+         (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~';
 }
 
 constexpr bool isSubdelim(char c) {
-  return c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' || c == ')' || c == '*' || c == '+' || c == ',' || c == ';' || c == '=';
+  return c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' ||
+         c == ')' || c == '*' || c == '+' || c == ',' || c == ';' || c == '=';
 }
 
 constexpr bool isPChar(char c) {
@@ -207,7 +208,8 @@ bool validateFragmentComponent(std::string_view fragmentStr);
 /**
  * Apply fragment component
  */
-bool applyFragmentComponent(std::string_view fragmentStr, std::string& fragment);
+bool applyFragmentComponent(std::string_view fragmentStr,
+                            std::string& fragment);
 
 /**
  * Structure for parsed relative URL components

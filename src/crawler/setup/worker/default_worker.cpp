@@ -28,16 +28,15 @@ void DefaultWorker::doWork() {
     for (const auto& nextUrl : result.outlinks()) {
       // process outlinks and insert back to frontier
       // check if nextUrl is a relative URL
-      types::URL baseURL {data_.url()};
+      types::URL baseURL{data_.url()};
       if (baseURL.applyPath(nextUrl)) {
         producingURLs_->try_enqueue(baseURL.to_string());
-      } 
-      else {
+      } else {
         producingURLs_->try_enqueue(nextUrl);
       }
     }
 
-    double r {reward(data_.url())};
+    double r{reward(data_.url())};
     data_.setNormalizedReward(r);
     frontier_.sendUpdate(data_.updateCtx());
 

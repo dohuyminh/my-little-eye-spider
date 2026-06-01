@@ -46,11 +46,8 @@ bool validatePathComponent(std::string_view pathStr) {
 
       // Extract segment (between slashes)
       std::string_view segment{p.substr(0, nextSlashPos)};
-      bool allPChar {
-        std::all_of(segment.begin(), segment.end(), [](char c) {
-          return isPChar(c);
-        })
-      };
+      bool allPChar{std::all_of(segment.begin(), segment.end(),
+                                [](char c) { return isPChar(c); })};
       if (!allPChar) {
         return false;
       }
@@ -73,12 +70,9 @@ bool validatePathComponent(std::string_view pathStr) {
     if (slashPos == std::string::npos) {
       slashPos = rest.size();
     }
-    std::string_view segmentNz {rest.substr(0, slashPos)};
-    bool allPChar {
-      std::all_of(segmentNz.begin(), segmentNz.end(), [](char c) {
-        return isPChar(c);
-      })
-    };
+    std::string_view segmentNz{rest.substr(0, slashPos)};
+    bool allPChar{std::all_of(segmentNz.begin(), segmentNz.end(),
+                              [](char c) { return isPChar(c); })};
 
     if (segmentNz.empty() || !allPChar) {
       return false;
@@ -95,12 +89,9 @@ bool validatePathComponent(std::string_view pathStr) {
   if (slashPos == std::string::npos) {
     slashPos = pathStr.size();
   }
-  std::string_view segmentNzNc {pathStr.substr(0, slashPos)};
-  bool allPCharNoColon {
-    std::all_of(segmentNzNc.begin(), segmentNzNc.end(), [](char c) {
-      return isPCharNC(c);
-    })
-  };
+  std::string_view segmentNzNc{pathStr.substr(0, slashPos)};
+  bool allPCharNoColon{std::all_of(segmentNzNc.begin(), segmentNzNc.end(),
+                                   [](char c) { return isPCharNC(c); })};
   if (segmentNzNc.empty() || !allPCharNoColon) {
     return false;
   }
@@ -188,13 +179,12 @@ bool validateQueryComponent(std::string_view queryStr) {
   }
 
   std::string_view key, value;
-  constexpr char kvRegex[] {
-    R"(([^=&]+)=([^&]*)&?)"
-  };
+  constexpr char kvRegex[]{R"(([^=&]+)=([^&]*)&?)"};
 
   // repeatedly consume k=v pairs until either we run out of pairs
   // or invalid string exists
-  while (RE2::Consume(&queryStr, kvRegex, &key, &value)) {}
+  while (RE2::Consume(&queryStr, kvRegex, &key, &value)) {
+  }
   return queryStr.empty();
 }
 
@@ -228,9 +218,8 @@ bool validateFragmentComponent(std::string_view fragmentStr) {
   // Fragment can contain any characters that are valid in URLs
   // Per RFC 3986, fragment can be empty or contain pchar / "/" / "?"
   // For now, we accept any non-empty fragment as valid
-  return std::all_of(fragmentStr.begin() + 1, fragmentStr.end(), [](char c) {
-    return isPChar(c) || c == '/' || c == '?'; 
-  });
+  return std::all_of(fragmentStr.begin() + 1, fragmentStr.end(),
+                     [](char c) { return isPChar(c) || c == '/' || c == '?'; });
 }
 
 /**
@@ -257,9 +246,7 @@ RelativeURLComponents parseRelativeURLComponents(
   std::string_view urlView{relativeURL};
   std::string_view path, queryParams, fragment;
 
-  constexpr char relativeReference[] {
-    R"(([^?#]*)(?:\?([^#]*))?(?:#(.*))?)"
-  };
+  constexpr char relativeReference[]{R"(([^?#]*)(?:\?([^#]*))?(?:#(.*))?)"};
 
   if (!RE2::FullMatch(urlView, relativeReference, &path, &queryParams,
                       &fragment)) {
@@ -285,8 +272,7 @@ bool parseAndApplyRelativeURL(
   }
 
   // Parse and validate all components
-  RelativeURLComponents components{
-      parseRelativeURLComponents(relativeURL)};
+  RelativeURLComponents components{parseRelativeURLComponents(relativeURL)};
 
   if (!components.isValid) {
     return false;
@@ -323,7 +309,8 @@ bool isRelativeURL(std::string_view str) {
     return true;  // empty string is technically valid (no-op relative URL)
   }
 
-  RelativeURLComponents components = parseRelativeURLComponents(std::string(str));
+  RelativeURLComponents components =
+      parseRelativeURLComponents(std::string(str));
   return components.isValid;
 }
 
@@ -501,7 +488,8 @@ ParseResult<URLParseResult> parse(const std::string& url) {
   }
 
   // parse path
-  bool pathParse{parseAndApplyRelativeURL(path.data(), result.path, result.queryParams, result.fragment)};
+  bool pathParse{parseAndApplyRelativeURL(path.data(), result.path,
+                                          result.queryParams, result.fragment)};
   if (!pathParse) {
     return std::unexpected(ParseError::PATH_ERROR);
   }
