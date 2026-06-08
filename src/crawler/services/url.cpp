@@ -1,13 +1,16 @@
 #include "url.h"
 
-#include <sched.h>
-
-#include <array>
+#include <algorithm>
 #include <cctype>
 #include <cstddef>
-#include <mutex>
+#include <ranges>
 #include <stdexcept>
 #include <string_view>
+#include <unordered_map>
+
+#include "idn2.h"
+#include "libpsl.h"
+#include "re2/re2.h"
 
 namespace crawler {
 
@@ -15,37 +18,117 @@ namespace services {
 
 namespace url {
 
-bool parseAndApplyRelativeURL(const std::string& relativeURL,
-                              std::vector<std::string>& path) {
-  if (!isRelativeURL(relativeURL.c_str())) {
+/**
+ * Helper: Validate the path component of a relative reference
+ * Checks syntax according to RFC 3986 (path-absolute, path-noscheme)
+ * Returns false if path starts with "//" (not supported per requirement)
+ */
+bool validatePathComponent(std::string_view pathStr) {
+  // empty path - valid
+  if (pathStr.empty()) {
+    return true;
+  }
+
+  auto validatePathAbempty = [](std::string_view p) {
+    // path-abempty: *( "/" segment )
+    // Each iteration should consume "/" and then a segment
+    while (!p.empty()) {
+      if (p[0] != '/') {
+        return false;  // Must start with / if non-empty
+      }
+      p = p.substr(1);  // Skip the /
+
+      // Find next / or end of string
+      std::size_t nextSlashPos{p.find('/')};
+      if (nextSlashPos == std::string::npos) {
+        nextSlashPos = p.size();
+      }
+
+      // Extract segment (between slashes)
+      std::string_view segment{p.substr(0, nextSlashPos)};
+      bool allPChar{std::all_of(segment.begin(), segment.end(),
+                                [](char c) { return isPChar(c); })};
+      if (!allPChar) {
+        return false;
+      }
+      p = p.substr(nextSlashPos);
+    }
+    return true;
+  };
+
+  // path-absolute
+  if (pathStr[0] == '/') {
+    std::string_view rest{pathStr.substr(1)};
+
+    // just a slash -> valid under path-absolute grammar
+    if (rest.empty()) {
+      return true;
+    }
+
+    // check if segment-nz parses successfully
+    std::size_t slashPos{rest.find('/')};
+    if (slashPos == std::string::npos) {
+      slashPos = rest.size();
+    }
+    std::string_view segmentNz{rest.substr(0, slashPos)};
+    bool allPChar{std::all_of(segmentNz.begin(), segmentNz.end(),
+                              [](char c) { return isPChar(c); })};
+
+    if (segmentNz.empty() || !allPChar) {
+      return false;
+    }
+
+    // from this point on, continuously validate path-abempty
+    std::string_view pathAbempty{rest.substr(slashPos)};
+    return validatePathAbempty(pathAbempty);
+  }
+
+  // path-noscheme
+  // check if segment-nz-nc parses successfully
+  std::size_t slashPos{pathStr.find('/')};
+  if (slashPos == std::string::npos) {
+    slashPos = pathStr.size();
+  }
+  std::string_view segmentNzNc{pathStr.substr(0, slashPos)};
+  bool allPCharNoColon{std::all_of(segmentNzNc.begin(), segmentNzNc.end(),
+                                   [](char c) { return isPCharNC(c); })};
+  if (segmentNzNc.empty() || !allPCharNoColon) {
     return false;
   }
 
-  if (relativeURL.empty()) {
-    return true;  // nothing to change
-  }
+  // from this point on, continuously validate path-abempty
+  std::string_view rest{pathStr.substr(slashPos)};
+  return validatePathAbempty(rest);
+}
 
+/**
+ * Helper: Apply path component to existing path vector
+ * Parses segments, handles ".", "..", and normal segments
+ * Returns false if attempt to go above root with ".."
+ */
+bool applyPathComponent(std::string_view pathStr,
+                        std::vector<std::string>& path) {
   std::vector<std::string> newPath = path;  // start with current path
 
-  size_t pos = 0;
+  std::size_t pos = 0;
 
-  // Check if the relative URL starts with '/'
-  if (relativeURL[0] == '/') {
+  // Check if the path starts with '/'
+  if (!pathStr.empty() && pathStr[0] == '/') {
     newPath.clear();  // start from root
     newPath.emplace_back("/");
     pos = 1;  // skip the leading slash
   }
 
-  while (pos < relativeURL.size()) {
+  while (pos < pathStr.size()) {
     // Find next slash
-    size_t next{relativeURL.find('/', pos)};
+    std::size_t next{pathStr.find('/', pos)};
     bool backFlag{false};
     std::string_view segment;
     if (next == std::string::npos) {
-      segment = std::string_view(relativeURL).substr(pos);
-      pos = relativeURL.size();  // will exit loop
+      segment = std::string_view(pathStr).substr(pos);
+      pos = pathStr.size();  // will exit loop
     } else {
-      segment = std::string_view(relativeURL).substr(pos, next - pos);
+      segment = std::string_view(pathStr).substr(pos, next - pos);
       pos = next + 1;
       backFlag = true;
     }
@@ -56,7 +139,10 @@ bool parseAndApplyRelativeURL(const std::string& relativeURL,
       continue;
     }
     if (segment == ".") {
-      // Current directory – do nothing
+      // if the current directory does not include "/" at the end, add it
+      if (!newPath.empty() && newPath.back().back() != '/') {
+        newPath.back().push_back('/');
+      }
       continue;
     }
     if (segment == "..") {
@@ -84,74 +170,308 @@ bool parseAndApplyRelativeURL(const std::string& relativeURL,
   return true;
 }
 
-bool isRelativeURL(std::string_view url) {
-  if (url.empty()) {
+/**
+ * Helper: Validate query component syntax
+ */
+bool validateQueryComponent(std::string_view queryStr) {
+  if (queryStr.empty()) {
+    return true;
+  }
+
+  std::string_view key, value;
+  constexpr char kvRegex[]{R"(([^=&]+)=([^&]*)&?)"};
+
+  // repeatedly consume k=v pairs until either we run out of pairs
+  // or invalid string exists
+  while (RE2::Consume(&queryStr, kvRegex, &key, &value)) {
+  }
+  return queryStr.empty();
+}
+
+/**
+ * Helper: Apply query component (parse key-value pairs and apply)
+ */
+bool applyQueryComponent(
+    std::string_view queryStr,
+    std::unordered_map<std::string, std::string>& queryParams) {
+  if (queryStr.empty()) {
+    queryParams.clear();
+    return true;
+  }
+
+  std::unordered_map<std::string, std::string> newParams;
+  std::string key, value;
+  constexpr char queryParamPattern[]{R"(([^=&]+)=([^&]*)&?)"};
+
+  while (RE2::Consume(&queryStr, queryParamPattern, &key, &value)) {
+    newParams[percentEncode(key)] = percentEncode(value);
+  }
+
+  queryParams = std::move(newParams);
+  return true;
+}
+
+/**
+ * Helper: Validate fragment component syntax
+ */
+bool validateFragmentComponent(std::string_view fragmentStr) {
+  // Fragment can contain any characters that are valid in URLs
+  // Per RFC 3986, fragment can be empty or contain pchar / "/" / "?"
+  // For now, we accept any non-empty fragment as valid
+  return std::all_of(fragmentStr.begin() + 1, fragmentStr.end(),
+                     [](char c) { return isPChar(c) || c == '/' || c == '?'; });
+}
+
+/**
+ * Helper: Apply fragment component
+ */
+bool applyFragmentComponent(std::string_view fragmentStr,
+                            std::string& fragment) {
+  if (fragmentStr.empty()) {
+    fragment.clear();
+    return true;
+  }
+  fragment = percentEncode(fragmentStr, '/');
+  return true;
+}
+
+/**
+ * Helper: Validate authority component (userinfo@host:port)
+ * Per RFC 3986: authority = [ userinfo "@" ] host [ ":" port ]
+ */
+bool validateAuthorityComponent(std::string_view authorityStr) {
+  if (authorityStr.empty()) {
+    return false;  // authority cannot be empty
+  }
+
+  // Basic check: authority must contain a valid host
+  // For simplicity, we require at least one character and no invalid chars
+  // More thorough validation happens during application
+  return true;
+}
+
+/**
+ * Helper: Apply authority component (decompose into host, port, userinfo)
+ * Returns false if authority format is invalid
+ */
+bool applyAuthorityComponent(std::string_view authorityStr, std::string& host,
+                             std::string& port, std::string& userinfo) {
+  if (authorityStr.empty()) {
+    return false;
+  }
+
+  std::string_view auth = authorityStr;
+  std::string_view parsedUserinfo, parsedHost, parsedPort;
+
+  // Parse authority: [userinfo@]host[:port]
+  constexpr char authorityPattern[]{
+      R"(^(([^@]*)@)?(\[[0-9a-fA-F:.]+\]|[^/?#:@]+)(:(\d+))?$)"};
+
+  if (!RE2::FullMatch(auth, authorityPattern, nullptr, &parsedUserinfo,
+                      &parsedHost, nullptr, &parsedPort)) {
+    return false;
+  }
+
+  // Validate host is not empty
+  if (parsedHost.empty()) {
+    return false;
+  }
+
+  // Apply components
+  userinfo = parsedUserinfo.empty() ? "" : std::string(parsedUserinfo);
+  host = std::string(parsedHost);
+  port = parsedPort.empty() ? "" : std::string(parsedPort);
+
+  return true;
+}
+
+/**
+ * Parse relative URL into components and validate each
+ * Returns the components and validation status
+ * Handles both regular relative URLs and network-path-references (//authority)
+ */
+RelativeURLComponents parseRelativeURLComponents(
+    const std::string& relativeURL) {
+  RelativeURLComponents components{{}, {}, {}, {}, false};
+
+  std::string_view urlView{relativeURL};
+
+  // Check for network-path-reference: //authority path-abempty [?query] [#fragment]
+  if (urlView.size() >= 2 && urlView[0] == '/' && urlView[1] == '/') {
+    // Find end of authority (next "/" or "?" or "#" or end of string)
+    std::size_t authorityStart{2};
+    std::size_t authorityEnd{authorityStart};
+
+    while (authorityEnd < urlView.size() && urlView[authorityEnd] != '/' &&
+           urlView[authorityEnd] != '?' && urlView[authorityEnd] != '#') {
+      ++authorityEnd;
+    }
+
+    if (authorityEnd == authorityStart) {
+      // Empty authority
+      return components;
+    }
+
+    std::string_view authority{urlView.substr(authorityStart, authorityEnd - authorityStart)};
+    
+    // Extract path, query, fragment from the rest
+    std::string_view pathQueryFragment{urlView.substr(authorityEnd)};
+    std::string_view path, queryParams, fragment;
+
+    constexpr char pathQueryFragmentPattern[]{R"(([^?#]*)(?:\?([^#]*))?(?:#(.*))?)"};
+
+    if (!RE2::FullMatch(pathQueryFragment, pathQueryFragmentPattern, &path,
+                        &queryParams, &fragment)) {
+      return components;
+    }
+
+    // Validate all components
+    bool isValid = validateAuthorityComponent(authority) &&
+                   validatePathComponent(path) &&
+                   validateQueryComponent(queryParams) &&
+                   validateFragmentComponent(fragment);
+
+    components.authority = authority;
+    components.path = path;
+    components.query = queryParams;
+    components.fragment = fragment;
+    components.isValid = isValid;
+
+    return components;
+  }
+
+  // Regular relative URL (no authority)
+  std::string_view path, queryParams, fragment;
+
+  constexpr char relativeReference[]{R"(([^?#]*)(?:\?([^#]*))?(?:#(.*))?)"};
+
+  if (!RE2::FullMatch(urlView, relativeReference, &path, &queryParams,
+                      &fragment)) {
+    return components;
+  }
+
+  components.path = path;
+  components.query = queryParams;
+  components.fragment = fragment;
+  components.isValid = validatePathComponent(path) &&
+                       validateQueryComponent(queryParams) &&
+                       validateFragmentComponent(fragment);
+
+  return components;
+}
+
+bool parseAndApplyRelativeURL(
+    const std::string& relativeURL, std::vector<std::string>& path,
+    std::unordered_map<std::string, std::string>& queryParams,
+    std::string& fragment) {
+  if (relativeURL.empty()) {
+    return true;  // nothing to change
+  }
+
+  // Parse and validate all components
+  RelativeURLComponents components{parseRelativeURLComponents(relativeURL)};
+
+  if (!components.isValid) {
+    return false;
+  }
+
+  // Create temporary copies for application
+  std::vector<std::string> tempPath{path};
+  std::unordered_map<std::string, std::string> tempQueryParams{queryParams};
+  std::string tempFragment{fragment};
+
+  // Apply all components (validate again during application)
+  if (!applyPathComponent(components.path, tempPath)) {
+    return false;
+  }
+
+  if (!applyQueryComponent(components.query, tempQueryParams)) {
+    return false;
+  }
+
+  if (!applyFragmentComponent(components.fragment, tempFragment)) {
+    return false;
+  }
+
+  // Commit changes only if all applications succeeded
+  path = std::move(tempPath);
+  queryParams = std::move(tempQueryParams);
+  fragment = std::move(tempFragment);
+
+  return true;
+}
+
+/**
+ * Extended version of parseAndApplyRelativeURL with authority support
+ * Handles network-path-reference format (//authority path-abempty)
+ */
+bool parseAndApplyRelativeURL(
+    const std::string& relativeURL, std::vector<std::string>& path,
+    std::unordered_map<std::string, std::string>& queryParams,
+    std::string& fragment, std::string& host, std::string& port,
+    std::string& userinfo) {
+  if (relativeURL.empty()) {
+    return true;  // nothing to change
+  }
+
+  // Parse and validate all components
+  RelativeURLComponents components{parseRelativeURLComponents(relativeURL)};
+
+  if (!components.isValid) {
+    return false;
+  }
+
+  // Create temporary copies for application
+  std::vector<std::string> tempPath{path};
+  std::unordered_map<std::string, std::string> tempQueryParams{queryParams};
+  std::string tempFragment{fragment};
+  std::string tempHost{host};
+  std::string tempPort{port};
+  std::string tempUserinfo{userinfo};
+
+  // If authority is present, apply it (replaces existing host/port/userinfo)
+  if (!components.authority.empty()) {
+    if (!applyAuthorityComponent(components.authority, tempHost, tempPort,
+                                 tempUserinfo)) {
+      return false;
+    }
+    // When authority is present, path becomes path-abempty (may be empty)
+    tempPath.clear();
+    tempPath.emplace_back("/");
+  }
+
+  // Apply all components (validate again during application)
+  if (!applyPathComponent(components.path, tempPath)) {
+    return false;
+  }
+
+  if (!applyQueryComponent(components.query, tempQueryParams)) {
+    return false;
+  }
+
+  if (!applyFragmentComponent(components.fragment, tempFragment)) {
+    return false;
+  }
+
+  // Commit changes only if all applications succeeded
+  path = std::move(tempPath);
+  queryParams = std::move(tempQueryParams);
+  fragment = std::move(tempFragment);
+  host = std::move(tempHost);
+  port = std::move(tempPort);
+  userinfo = std::move(tempUserinfo);
+
+  return true;
+}
+
+bool isRelativeURL(std::string_view str) {
+  if (str.empty()) {
     return true;  // empty string is technically valid (no-op relative URL)
   }
 
-  // Check for scheme pattern: letter+ followed by "://"
-  // RFC 3986: scheme = ALPHA *( ALPHA / DIGIT / "+" / "-" / "." )
-  size_t colonPos{url.find(':')};
-
-  // No colon means no scheme, so it's relative
-  if (colonPos == std::string_view::npos) {
-    return true;
-  }
-
-  // Check if it's followed by "//" (scheme-specific part delimiter)
-  if (colonPos + 2 >= url.size() || url[colonPos + 1] != '/' ||
-      url[colonPos + 2] != '/') {
-    // Just "foo:bar" without "//" - could be a colon in path, not a scheme
-    // Check if all chars before colon are valid scheme chars
-    if (colonPos == 0) {
-      return true;  // starts with ":" - not a scheme, treat as relative
-    }
-
-    // Validate scheme characters
-    for (size_t i = 0; i < colonPos; ++i) {
-      char c = url[i];
-      if (i == 0) {
-        // First char must be ALPHA
-        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))) {
-          return true;  // not a valid scheme start, so relative
-        }
-      } else {
-        // Subsequent chars: ALPHA / DIGIT / "+" / "-" / "."
-        if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-              (c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.')) {
-          return true;  // invalid scheme char, so not a scheme
-        }
-      }
-    }
-    // All chars before colon are valid scheme chars, but no "://" follows
-    // This is ambiguous but likely not an absolute URL
-    return true;
-  }
-
-  // We have "://" - verify the scheme part is valid
-  if (colonPos == 0) {
-    return true;  // starts with "://" - protocol-relative URL
-  }
-
-  // Validate scheme characters
-  for (size_t i = 0; i < colonPos; ++i) {
-    char c = url[i];
-    if (i == 0) {
-      // First char must be ALPHA
-      if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z'))) {
-        return true;  // not a valid scheme start
-      }
-    } else {
-      // Subsequent chars: ALPHA / DIGIT / "+" / "-" / "."
-      if (!((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
-            (c >= '0' && c <= '9') || c == '+' || c == '-' || c == '.')) {
-        return true;  // invalid scheme char
-      }
-    }
-  }
-
-  // Has valid scheme followed by "://" - this is an absolute URL
-  return false;
+  RelativeURLComponents components =
+      parseRelativeURLComponents(std::string(str));
+  return components.isValid;
 }
 
 ParseResult<URLParseResult> parse(const std::string& url) {
@@ -280,7 +600,7 @@ ParseResult<URLParseResult> parse(const std::string& url) {
 
       // Extract subdomains: everything before the registered domain
       if (hostStr.length() > registeredDomainStr.length()) {
-        size_t domainStart{hostStr.rfind(registeredDomainStr)};
+        std::size_t domainStart{hostStr.rfind(registeredDomainStr)};
         if (domainStart > 0 && hostStr[domainStart - 1] == '.') {
           std::string subdomainPart{hostStr.substr(0, domainStart - 1)};
 
@@ -328,7 +648,8 @@ ParseResult<URLParseResult> parse(const std::string& url) {
   }
 
   // parse path
-  bool pathParse{parseAndApplyRelativeURL(path.data(), result.path)};
+  bool pathParse{parseAndApplyRelativeURL(path.data(), result.path,
+                                          result.queryParams, result.fragment)};
   if (!pathParse) {
     return std::unexpected(ParseError::PATH_ERROR);
   }

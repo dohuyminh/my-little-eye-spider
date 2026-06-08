@@ -3,17 +3,11 @@
 #include <concepts>
 #include <expected>
 #include <nlohmann/json.hpp>
-#include <optional>
-#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
 #include <unordered_map>
 #include <vector>
-
-#include "idn2.h"
-#include "libpsl.h"
-#include "re2/re2.h"
 
 namespace crawler {
 
@@ -63,8 +57,10 @@ inline bool isPercentEncoded(const StringLike auto& str);
 
 constexpr bool isAscii(char c) { return static_cast<unsigned char>(c) <= 127; }
 
-bool parseAndApplyRelativeURL(const std::string& relativeURL,
-                              std::vector<std::string>& path);
+bool parseAndApplyRelativeURL(
+    const std::string& relativeURL, std::vector<std::string>& path,
+    std::unordered_map<std::string, std::string>& queryParams,
+    std::string& fragment);
 
 /**
  * Validates if a string is a valid relative URL.
@@ -159,6 +155,100 @@ inline std::string percentDecode(const StringLike auto& src) {
 inline bool isPercentEncoded(const StringLike auto& str) {
   return percentDecode(str) != str;
 }
+
+constexpr bool isUnreserved(char c) {
+  return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') ||
+         (c >= '0' && c <= '9') || c == '-' || c == '_' || c == '.' || c == '~';
+}
+
+constexpr bool isSubdelim(char c) {
+  return c == '!' || c == '$' || c == '&' || c == '\'' || c == '(' ||
+         c == ')' || c == '*' || c == '+' || c == ',' || c == ';' || c == '=';
+}
+
+constexpr bool isPChar(char c) {
+  return isUnreserved(c) || isSubdelim(c) || c == ':' || c == '@';
+}
+
+constexpr bool isPCharNC(char c) {
+  return isUnreserved(c) || isSubdelim(c) || c == '@';
+}
+
+// Helper functions for relative URL parsing
+/**
+ * Validate the path component of a relative reference
+ * Returns false if path starts with "//" (not supported)
+ */
+bool validatePathComponent(std::string_view pathStr);
+
+/**
+ * Apply path component to existing path vector
+ * Handles ".", "..", and normal segments
+ */
+bool applyPathComponent(std::string_view pathStr,
+                        std::vector<std::string>& path);
+
+/**
+ * Validate query component syntax
+ */
+bool validateQueryComponent(std::string_view queryStr);
+
+/**
+ * Apply query component (parse key-value pairs)
+ */
+bool applyQueryComponent(
+    std::string_view queryStr,
+    std::unordered_map<std::string, std::string>& queryParams);
+
+/**
+ * Validate fragment component syntax
+ */
+bool validateFragmentComponent(std::string_view fragmentStr);
+
+/**
+ * Apply fragment component
+ */
+bool applyFragmentComponent(std::string_view fragmentStr,
+                            std::string& fragment);
+
+/**
+ * Helper: Validate authority component (userinfo@host:port)
+ */
+bool validateAuthorityComponent(std::string_view authorityStr);
+
+/**
+ * Helper: Apply authority component (parse and store host, port, userinfo)
+ */
+bool applyAuthorityComponent(std::string_view authorityStr, std::string& host,
+                             std::string& port, std::string& userinfo);
+
+/**
+ * Structure for parsed relative URL components
+ * Includes optional authority fields for network-path-reference format (//authority)
+ */
+struct RelativeURLComponents {
+  std::string_view path;
+  std::string_view query;
+  std::string_view fragment;
+  std::string_view authority;  // For network-path-reference (//authority)
+  bool isValid;
+};
+
+/**
+ * Parse relative URL into components and validate each
+ */
+RelativeURLComponents parseRelativeURLComponents(
+    const std::string& relativeURL);
+
+/**
+ * Extended version of parseAndApplyRelativeURL with authority support
+ * Handles network-path-reference format (//authority path-abempty)
+ */
+bool parseAndApplyRelativeURL(
+    const std::string& relativeURL, std::vector<std::string>& path,
+    std::unordered_map<std::string, std::string>& queryParams,
+    std::string& fragment, std::string& host, std::string& port,
+    std::string& userinfo);
 
 }  // namespace url
 
