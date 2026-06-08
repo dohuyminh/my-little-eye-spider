@@ -137,6 +137,41 @@ TEST(IsRelativeURLTest, ProtocolRelativeUrl) {
   EXPECT_TRUE(isRelativeURL(input));
 }
 
+TEST(IsRelativeURLTest, AuthorityWithPath) {
+  std::string_view input{"//example.com/path/to/page"};
+  EXPECT_TRUE(isRelativeURL(input));
+}
+
+TEST(IsRelativeURLTest, AuthorityWithQuery) {
+  std::string_view input{"//example.com?key=value"};
+  EXPECT_TRUE(isRelativeURL(input));
+}
+
+TEST(IsRelativeURLTest, AuthorityWithFragment) {
+  std::string_view input{"//example.com#section"};
+  EXPECT_TRUE(isRelativeURL(input));
+}
+
+TEST(IsRelativeURLTest, AuthorityWithPathQueryAndFragment) {
+  std::string_view input{"//example.com/path?q=search#results"};
+  EXPECT_TRUE(isRelativeURL(input));
+}
+
+TEST(IsRelativeURLTest, AuthorityWithPort) {
+  std::string_view input{"//example.com:8080/page"};
+  EXPECT_TRUE(isRelativeURL(input));
+}
+
+TEST(IsRelativeURLTest, AuthorityWithUserinfo) {
+  std::string_view input{"//user:pass@example.com/page"};
+  EXPECT_TRUE(isRelativeURL(input));
+}
+
+TEST(IsRelativeURLTest, AuthorityWithUserinfoPortPathQuery) {
+  std::string_view input{"//user@example.com:8080/page?id=123"};
+  EXPECT_TRUE(isRelativeURL(input));
+}
+
 TEST(IsRelativeURLTest, InvalidSchemeStart) {
   std::string_view input{"1http://example.com"};
   EXPECT_FALSE(isRelativeURL(input));  // Contains ':' which is not allowed in path-noscheme first segment
@@ -512,6 +547,180 @@ TEST(parseAndApplyRelativeURLTest, ComplexRelativeWithDotDotQueryFragment) {
   EXPECT_EQ(queryParams["theme"], "dark");
   EXPECT_EQ(queryParams["lang"], "en-US");
   EXPECT_EQ(fragment, "privacy");
+}
+
+// ============================================================================
+// parseAndApplyRelativeURL with authority support (network-path-reference)
+// ============================================================================
+
+TEST(parseAndApplyRelativeURLWithAuthorityTest, SimpleAuthority) {
+  std::vector<std::string> path{"/", "old/"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
+  std::string host;
+  std::string port;
+  std::string userinfo;
+  std::string relative{"//example.com"};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment,
+                                       host, port, userinfo)};
+  EXPECT_TRUE(result);
+  EXPECT_EQ(host, "example.com");
+  EXPECT_TRUE(port.empty());
+  EXPECT_TRUE(userinfo.empty());
+  // Path should be reset to root when authority is present
+  EXPECT_EQ(path.size(), 1);
+  EXPECT_EQ(path[0], "/");
+}
+
+TEST(parseAndApplyRelativeURLWithAuthorityTest, AuthorityWithPort) {
+  std::vector<std::string> path;
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
+  std::string host;
+  std::string port;
+  std::string userinfo;
+  std::string relative{"//example.com:8080"};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment,
+                                       host, port, userinfo)};
+  EXPECT_TRUE(result);
+  EXPECT_EQ(host, "example.com");
+  EXPECT_EQ(port, "8080");
+  EXPECT_TRUE(userinfo.empty());
+}
+
+TEST(parseAndApplyRelativeURLWithAuthorityTest, AuthorityWithUserinfo) {
+  std::vector<std::string> path;
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
+  std::string host;
+  std::string port;
+  std::string userinfo;
+  std::string relative{"//user:pass@example.com"};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment,
+                                       host, port, userinfo)};
+  EXPECT_TRUE(result);
+  EXPECT_EQ(host, "example.com");
+  EXPECT_TRUE(port.empty());
+  EXPECT_EQ(userinfo, "user:pass");
+}
+
+TEST(parseAndApplyRelativeURLWithAuthorityTest, AuthorityWithPath) {
+  std::vector<std::string> path{"/", "old/"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
+  std::string host;
+  std::string port;
+  std::string userinfo;
+  std::string relative{"//newhost.com/new/path"};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment,
+                                       host, port, userinfo)};
+  EXPECT_TRUE(result);
+  EXPECT_EQ(host, "newhost.com");
+  EXPECT_EQ(path.size(), 3);
+  EXPECT_EQ(path[0], "/");
+  EXPECT_EQ(path[1], "new/");
+  EXPECT_EQ(path[2], "path");
+}
+
+TEST(parseAndApplyRelativeURLWithAuthorityTest, AuthorityWithPathQuery) {
+  std::vector<std::string> path;
+  std::unordered_map<std::string, std::string> queryParams{{"old", "param"}};
+  std::string fragment;
+  std::string host;
+  std::string port;
+  std::string userinfo;
+  std::string relative{"//api.example.com/v1/users?limit=10&offset=0"};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment,
+                                       host, port, userinfo)};
+  EXPECT_TRUE(result);
+  EXPECT_EQ(host, "api.example.com");
+  EXPECT_EQ(path.size(), 3);
+  EXPECT_EQ(path[0], "/");
+  EXPECT_EQ(path[1], "v1/");
+  EXPECT_EQ(path[2], "users");
+  EXPECT_EQ(queryParams.size(), 2);
+  EXPECT_EQ(queryParams["limit"], "10");
+  EXPECT_EQ(queryParams["offset"], "0");
+  EXPECT_FALSE(queryParams.count("old"));  // Old params replaced
+}
+
+TEST(parseAndApplyRelativeURLWithAuthorityTest, AuthorityWithFragment) {
+  std::vector<std::string> path;
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
+  std::string host;
+  std::string port;
+  std::string userinfo;
+  std::string relative{"//doc.example.com/guide#introduction"};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment,
+                                       host, port, userinfo)};
+  EXPECT_TRUE(result);
+  EXPECT_EQ(host, "doc.example.com");
+  EXPECT_EQ(fragment, "introduction");
+}
+
+TEST(parseAndApplyRelativeURLWithAuthorityTest,
+     AuthorityWithPathQueryFragment) {
+  std::vector<std::string> path{"/", "old/"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment{"oldFrag"};
+  std::string host{"oldhost.com"};
+  std::string port{"9090"};
+  std::string userinfo;
+  std::string relative{"//newhost.com:8080/api/search?q=test#results"};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment,
+                                       host, port, userinfo)};
+  EXPECT_TRUE(result);
+  EXPECT_EQ(host, "newhost.com");
+  EXPECT_EQ(port, "8080");
+  EXPECT_EQ(path.size(), 3);
+  EXPECT_EQ(path[0], "/");
+  EXPECT_EQ(path[1], "api/");
+  EXPECT_EQ(path[2], "search");
+  EXPECT_EQ(queryParams.size(), 1);
+  EXPECT_EQ(queryParams["q"], "test");
+  EXPECT_EQ(fragment, "results");
+}
+
+TEST(parseAndApplyRelativeURLWithAuthorityTest, AuthorityReplacesPrevious) {
+  std::vector<std::string> path;
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
+  std::string host{"oldhost.com"};
+  std::string port{"3000"};
+  std::string userinfo{"olduser:oldpass"};
+  std::string relative{"//newhost.com:5000"};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment,
+                                       host, port, userinfo)};
+  EXPECT_TRUE(result);
+  EXPECT_EQ(host, "newhost.com");
+  EXPECT_EQ(port, "5000");
+  EXPECT_TRUE(userinfo.empty());  // Old userinfo replaced/cleared
+}
+
+TEST(parseAndApplyRelativeURLWithAuthorityTest, ComplexAuthorityWithUserinfo) {
+  std::vector<std::string> path{"/", "old/"};
+  std::unordered_map<std::string, std::string> queryParams;
+  std::string fragment;
+  std::string host;
+  std::string port;
+  std::string userinfo;
+  std::string relative{"//admin:secret123@cdn.example.com:443/assets/style"
+                       ".css?v=2&format=compressed#top"};
+  bool result{parseAndApplyRelativeURL(relative, path, queryParams, fragment,
+                                       host, port, userinfo)};
+  EXPECT_TRUE(result);
+  EXPECT_EQ(host, "cdn.example.com");
+  EXPECT_EQ(port, "443");
+  EXPECT_EQ(userinfo, "admin:secret123");
+  EXPECT_EQ(path.size(), 3);
+  EXPECT_EQ(path[0], "/");
+  EXPECT_EQ(path[1], "assets/");
+  EXPECT_EQ(path[2], "style.css");
+  EXPECT_EQ(queryParams.size(), 2);
+  EXPECT_EQ(queryParams["v"], "2");
+  EXPECT_EQ(queryParams["format"], "compressed");
+  EXPECT_EQ(fragment, "top");
 }
 
 // ============================================================================

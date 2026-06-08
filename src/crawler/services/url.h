@@ -212,12 +212,25 @@ bool applyFragmentComponent(std::string_view fragmentStr,
                             std::string& fragment);
 
 /**
+ * Helper: Validate authority component (userinfo@host:port)
+ */
+bool validateAuthorityComponent(std::string_view authorityStr);
+
+/**
+ * Helper: Apply authority component (parse and store host, port, userinfo)
+ */
+bool applyAuthorityComponent(std::string_view authorityStr, std::string& host,
+                             std::string& port, std::string& userinfo);
+
+/**
  * Structure for parsed relative URL components
+ * Includes optional authority fields for network-path-reference format (//authority)
  */
 struct RelativeURLComponents {
   std::string_view path;
   std::string_view query;
   std::string_view fragment;
+  std::string_view authority;  // For network-path-reference (//authority)
   bool isValid;
 };
 
@@ -226,6 +239,16 @@ struct RelativeURLComponents {
  */
 RelativeURLComponents parseRelativeURLComponents(
     const std::string& relativeURL);
+
+/**
+ * Extended version of parseAndApplyRelativeURL with authority support
+ * Handles network-path-reference format (//authority path-abempty)
+ */
+bool parseAndApplyRelativeURL(
+    const std::string& relativeURL, std::vector<std::string>& path,
+    std::unordered_map<std::string, std::string>& queryParams,
+    std::string& fragment, std::string& host, std::string& port,
+    std::string& userinfo);
 
 }  // namespace url
 

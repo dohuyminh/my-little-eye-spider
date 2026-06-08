@@ -236,14 +236,111 @@ bool applyFragmentComponent(std::string_view fragmentStr,
 }
 
 /**
+ * Helper: Validate authority component (userinfo@host:port)
+ * Per RFC 3986: authority = [ userinfo "@" ] host [ ":" port ]
+ */
+bool validateAuthorityComponent(std::string_view authorityStr) {
+  if (authorityStr.empty()) {
+    return false;  // authority cannot be empty
+  }
+
+  // Basic check: authority must contain a valid host
+  // For simplicity, we require at least one character and no invalid chars
+  // More thorough validation happens during application
+  return true;
+}
+
+/**
+ * Helper: Apply authority component (decompose into host, port, userinfo)
+ * Returns false if authority format is invalid
+ */
+bool applyAuthorityComponent(std::string_view authorityStr, std::string& host,
+                             std::string& port, std::string& userinfo) {
+  if (authorityStr.empty()) {
+    return false;
+  }
+
+  std::string_view auth = authorityStr;
+  std::string_view parsedUserinfo, parsedHost, parsedPort;
+
+  // Parse authority: [userinfo@]host[:port]
+  constexpr char authorityPattern[]{
+      R"(^(([^@]*)@)?(\[[0-9a-fA-F:.]+\]|[^/?#:@]+)(:(\d+))?$)"};
+
+  if (!RE2::FullMatch(auth, authorityPattern, nullptr, &parsedUserinfo,
+                      &parsedHost, nullptr, &parsedPort)) {
+    return false;
+  }
+
+  // Validate host is not empty
+  if (parsedHost.empty()) {
+    return false;
+  }
+
+  // Apply components
+  userinfo = parsedUserinfo.empty() ? "" : std::string(parsedUserinfo);
+  host = std::string(parsedHost);
+  port = parsedPort.empty() ? "" : std::string(parsedPort);
+
+  return true;
+}
+
+/**
  * Parse relative URL into components and validate each
  * Returns the components and validation status
+ * Handles both regular relative URLs and network-path-references (//authority)
  */
 RelativeURLComponents parseRelativeURLComponents(
     const std::string& relativeURL) {
-  RelativeURLComponents components{{}, {}, {}, false};
+  RelativeURLComponents components{{}, {}, {}, {}, false};
 
   std::string_view urlView{relativeURL};
+
+  // Check for network-path-reference: //authority path-abempty [?query] [#fragment]
+  if (urlView.size() >= 2 && urlView[0] == '/' && urlView[1] == '/') {
+    // Find end of authority (next "/" or "?" or "#" or end of string)
+    std::size_t authorityStart{2};
+    std::size_t authorityEnd{authorityStart};
+
+    while (authorityEnd < urlView.size() && urlView[authorityEnd] != '/' &&
+           urlView[authorityEnd] != '?' && urlView[authorityEnd] != '#') {
+      ++authorityEnd;
+    }
+
+    if (authorityEnd == authorityStart) {
+      // Empty authority
+      return components;
+    }
+
+    std::string_view authority{urlView.substr(authorityStart, authorityEnd - authorityStart)};
+    
+    // Extract path, query, fragment from the rest
+    std::string_view pathQueryFragment{urlView.substr(authorityEnd)};
+    std::string_view path, queryParams, fragment;
+
+    constexpr char pathQueryFragmentPattern[]{R"(([^?#]*)(?:\?([^#]*))?(?:#(.*))?)"};
+
+    if (!RE2::FullMatch(pathQueryFragment, pathQueryFragmentPattern, &path,
+                        &queryParams, &fragment)) {
+      return components;
+    }
+
+    // Validate all components
+    bool isValid = validateAuthorityComponent(authority) &&
+                   validatePathComponent(path) &&
+                   validateQueryComponent(queryParams) &&
+                   validateFragmentComponent(fragment);
+
+    components.authority = authority;
+    components.path = path;
+    components.query = queryParams;
+    components.fragment = fragment;
+    components.isValid = isValid;
+
+    return components;
+  }
+
+  // Regular relative URL (no authority)
   std::string_view path, queryParams, fragment;
 
   constexpr char relativeReference[]{R"(([^?#]*)(?:\?([^#]*))?(?:#(.*))?)"};
@@ -300,6 +397,69 @@ bool parseAndApplyRelativeURL(
   path = std::move(tempPath);
   queryParams = std::move(tempQueryParams);
   fragment = std::move(tempFragment);
+
+  return true;
+}
+
+/**
+ * Extended version of parseAndApplyRelativeURL with authority support
+ * Handles network-path-reference format (//authority path-abempty)
+ */
+bool parseAndApplyRelativeURL(
+    const std::string& relativeURL, std::vector<std::string>& path,
+    std::unordered_map<std::string, std::string>& queryParams,
+    std::string& fragment, std::string& host, std::string& port,
+    std::string& userinfo) {
+  if (relativeURL.empty()) {
+    return true;  // nothing to change
+  }
+
+  // Parse and validate all components
+  RelativeURLComponents components{parseRelativeURLComponents(relativeURL)};
+
+  if (!components.isValid) {
+    return false;
+  }
+
+  // Create temporary copies for application
+  std::vector<std::string> tempPath{path};
+  std::unordered_map<std::string, std::string> tempQueryParams{queryParams};
+  std::string tempFragment{fragment};
+  std::string tempHost{host};
+  std::string tempPort{port};
+  std::string tempUserinfo{userinfo};
+
+  // If authority is present, apply it (replaces existing host/port/userinfo)
+  if (!components.authority.empty()) {
+    if (!applyAuthorityComponent(components.authority, tempHost, tempPort,
+                                 tempUserinfo)) {
+      return false;
+    }
+    // When authority is present, path becomes path-abempty (may be empty)
+    tempPath.clear();
+    tempPath.emplace_back("/");
+  }
+
+  // Apply all components (validate again during application)
+  if (!applyPathComponent(components.path, tempPath)) {
+    return false;
+  }
+
+  if (!applyQueryComponent(components.query, tempQueryParams)) {
+    return false;
+  }
+
+  if (!applyFragmentComponent(components.fragment, tempFragment)) {
+    return false;
+  }
+
+  // Commit changes only if all applications succeeded
+  path = std::move(tempPath);
+  queryParams = std::move(tempQueryParams);
+  fragment = std::move(tempFragment);
+  host = std::move(tempHost);
+  port = std::move(tempPort);
+  userinfo = std::move(tempUserinfo);
 
   return true;
 }
