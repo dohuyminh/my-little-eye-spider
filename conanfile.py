@@ -16,9 +16,14 @@ class Recipe(ConanFile):
         self.requires("lexbor/2.6.0")
         self.requires("nlohmann_json/3.12.0")
         self.requires("boost/1.90.0")
+        self.requires("libpqxx/8.0.1")
+        self.requires("sqlite3/3.53.1")
 
     def build_requirements(self):
         self.tool_requires("cmake/[>=3.18]")
+
+    def configure(self):
+        self.settings.compiler.cppstd = "23"
 
     def layout(self):
         cmake_layout(self)

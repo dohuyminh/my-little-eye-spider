@@ -224,7 +224,8 @@ bool applyAuthorityComponent(std::string_view authorityStr, std::string& host,
 
 /**
  * Structure for parsed relative URL components
- * Includes optional authority fields for network-path-reference format (//authority)
+ * Includes optional authority fields for network-path-reference format
+ * (//authority)
  */
 struct RelativeURLComponents {
   std::string_view path;

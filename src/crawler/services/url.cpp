@@ -296,7 +296,8 @@ RelativeURLComponents parseRelativeURLComponents(
 
   std::string_view urlView{relativeURL};
 
-  // Check for network-path-reference: //authority path-abempty [?query] [#fragment]
+  // Check for network-path-reference: //authority path-abempty [?query]
+  // [#fragment]
   if (urlView.size() >= 2 && urlView[0] == '/' && urlView[1] == '/') {
     // Find end of authority (next "/" or "?" or "#" or end of string)
     std::size_t authorityStart{2};
@@ -312,13 +313,15 @@ RelativeURLComponents parseRelativeURLComponents(
       return components;
     }
 
-    std::string_view authority{urlView.substr(authorityStart, authorityEnd - authorityStart)};
-    
+    std::string_view authority{
+        urlView.substr(authorityStart, authorityEnd - authorityStart)};
+
     // Extract path, query, fragment from the rest
     std::string_view pathQueryFragment{urlView.substr(authorityEnd)};
     std::string_view path, queryParams, fragment;
 
-    constexpr char pathQueryFragmentPattern[]{R"(([^?#]*)(?:\?([^#]*))?(?:#(.*))?)"};
+    constexpr char pathQueryFragmentPattern[]{
+        R"(([^?#]*)(?:\?([^#]*))?(?:#(.*))?)"};
 
     if (!RE2::FullMatch(pathQueryFragment, pathQueryFragmentPattern, &path,
                         &queryParams, &fragment)) {

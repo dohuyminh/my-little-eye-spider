@@ -53,7 +53,7 @@ While in the project's root directory:
 
 ```bash
 # install all dependencies listed in conanfile.py; 
-# replace "Release" with debug if under development
+# replace "Release" with "Debug" if under development
 $ conan install . -sbuild_type=Release -of=build --build=missing
 
 $ cd build

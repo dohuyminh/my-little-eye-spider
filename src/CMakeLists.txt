@@ -6,6 +6,7 @@ find_package(libpsl REQUIRED)
 find_package(CURL REQUIRED)
 find_package(lexbor REQUIRED)
 find_package(nlohmann_json REQUIRED)
+find_package(libpqxx REQUIRED)
 
 add_subdirectory(memory)
 add_subdirectory(crawler)
