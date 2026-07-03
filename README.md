@@ -54,7 +54,7 @@ While in the project's root directory:
 ```bash
 # install all dependencies listed in conanfile.py; 
 # replace "Release" with "Debug" if under development
-$ conan install . -sbuild_type=Release -of=build --build=missing
+$ conan install . -pr ./conan_profile/project_profile -sbuild_type=Release -of=build --build=missing
 
 $ cd build
 ```
@@ -102,7 +102,7 @@ $ cmake .. \
     -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake \
     -DCMAKE_BUILD_TYPE=Release 
 
-$ cmake --build build
+$ cmake --build .
 
 # assuming you're on a UNIX machine
 $ ./src/main
