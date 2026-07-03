@@ -10,6 +10,7 @@ find_package(libpqxx REQUIRED)
 
 add_subdirectory(memory)
 add_subdirectory(crawler)
+add_subdirectory(dotenv)
 
 add_executable(
     main
@@ -33,4 +34,7 @@ target_link_libraries(
     crawler
     services
     types
+    
+    # dotenv
+    cpp_dotenv
 )
