@@ -30,7 +30,7 @@ public:
       }
     }
 
-    new(&buffer_[writePtr % capacity_]) T(std::forward<Args>(args)...);
+    new(&buffer_[writePtr & (capacity_ - 1)]) T(std::forward<Args>(args)...);
     writePtr_.store(writePtr + 1, std::memory_order_release);
 
     return true;
@@ -47,7 +47,7 @@ public:
       }
     }
 
-    new(&buffer_[writePtr % capacity_]) T(value);
+    new(&buffer_[writePtr & (capacity_ - 1)]) T(value);
     writePtr_.store(writePtr + 1, std::memory_order_release);
     
     return true;
@@ -64,8 +64,8 @@ public:
       }
     }
 
-    ref = buffer_[readPtr % capacity_];
-    buffer_[readPtr % capacity_].~T();
+    ref = buffer_[readPtr & (capacity_ - 1)];
+    buffer_[readPtr & (capacity_ - 1)].~T();
     readPtr_.store(readPtr + 1, std::memory_order_release);
     return true;
   }
@@ -83,7 +83,7 @@ public:
                 writePtr = writePtr_.load(std::memory_order_acquire);
     
     while (readPtr < writePtr) {
-      buffer_[readPtr % capacity_].~T();
+      buffer_[readPtr & (capacity_ - 1)].~T();
       ++readPtr;
     }
 
