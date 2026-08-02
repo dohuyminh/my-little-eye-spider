@@ -6,7 +6,6 @@
 #include <pqxx/pqxx>
 #include <queue>
 #include <thread>
-#include <utility>
 
 #include "database_adapter.h"
 
@@ -49,23 +48,13 @@ class PostgreSQLAdapter {
   PostgreSQLAdapter(
       std::string_view connectionString,
       std::size_t numConnections = std::thread::hardware_concurrency() * 2);
-
-  template <typename... Args>
-  DbQueryReturn<pqxx::result> execute(std::string_view query, Args&&... args) {
-    auto conn{pool_.acquireConnection()};
-    pqxx::work tx{*conn};
-
-    try {
-      auto r = tx.exec(query, std::forward<Args>(args)...);
-      tx.commit();
-      return r;
-    } catch (...) {
-      return std::unexpected(ExecutionStatus::EXEC_FAIL);
-    }
-  }
-
+   
+  DbQueryReturn<pqxx::result> execute(std::string_view query, bool isWrite = false) noexcept; 
+ 
  private:
   PostgreSQLConnectionPool pool_;
 };
+
+std::string getConnectionString();
 
 }  // namespace crawler::database

@@ -1,14 +1,10 @@
 #pragma once
 
+#include <exception>
 #include <expected>
 namespace crawler::database {
 
-enum class ExecutionStatus {
-  EXEC_OK,
-  EXEC_FAIL,
-};
-
 template <typename ReturnType>
-using DbQueryReturn = std::expected<ReturnType, ExecutionStatus>;
+using DbQueryReturn = std::expected<ReturnType, std::exception_ptr>;
 
 }  // namespace crawler::database

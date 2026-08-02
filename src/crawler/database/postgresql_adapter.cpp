@@ -1,8 +1,12 @@
 #include "postgresql_adapter.h"
 
+#include <exception>
+#include <format>
 #include <memory>
 #include <mutex>
 #include <stdexcept>
+
+#include "dotenv.h"
 
 namespace crawler::database {
 
@@ -57,5 +61,51 @@ void PostgreSQLConnectionPool::releaseConnection(pqxx::connection *conn) {
 PostgreSQLAdapter::PostgreSQLAdapter(std::string_view connectionString,
                                      std::size_t numConnections)
     : pool_(connectionString, numConnections) {}
+
+DbQueryReturn<pqxx::result> PostgreSQLAdapter::execute(std::string_view query, bool isWrite) noexcept {
+  auto conn = pool_.acquireConnection();
+  pqxx::work tx{*conn};
+
+  try {
+    auto r = tx.exec(query);
+    if (isWrite) {
+      tx.commit();
+    }
+    return r;
+  } catch (...) {
+    return std::unexpected(std::current_exception());
+  }
+}
+
+
+std::string getConnectionString() {
+  
+  if (dotenv::env["POSTGRESQL_DB_HOST"].empty()) [[unlikely]] {
+    throw std::invalid_argument("[getConnectionString] PostgreSQL Host is not configured");
+  }
+
+  if (dotenv::env["POSTGRESQL_DB_PORT"].empty()) [[unlikely]] {
+    throw std::invalid_argument("[getConnectionString] PostgreSQL Port is not configured");
+  }
+  
+  if (dotenv::env["POSTGRESQL_DB_NAME"].empty()) [[unlikely]] {
+    throw std::invalid_argument("[getConnectionString] PostgreSQL Database name is not configured");
+  }
+
+  if (dotenv::env["POSTGRESQL_DB_USERNAME"].empty()) [[unlikely]] {
+    throw std::invalid_argument("[getConnectionString] PostgreSQL Username is not configured");
+  }
+
+  if (dotenv::env["POSTGRESQL_DB_PASSWORD"].empty()) [[unlikely]] {
+    throw std::invalid_argument("[getConnectionString] PostgreSQL Password is not configured");
+  }
+
+  return std::format("host={} port={} dbname={} user={} password={}", 
+      dotenv::env["POSTGRESQL_DB_HOST"],
+      dotenv::env["POSTGRESQL_DB_PORT"],
+      dotenv::env["POSTGRESQL_DB_NAME"],
+      dotenv::env["POSTGRESQL_DB_USERNAME"],
+      dotenv::env["POSTGRESQL_DB_PASSWORD"]);
+}
 
 }  // namespace crawler::database

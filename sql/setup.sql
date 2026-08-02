@@ -4,10 +4,10 @@ START TRANSACTION;
 
 -- URL tables
 CREATE TABLE urls (
-  id            UUID      PRIMARY KEY    ,
-  url           VARCHAR   NOT NULL UNIQUE,
-  discovered_at TIMESTAMP NOT NULL       , 
-  last_crawled  TIMESTAMP NOT NULL
+  id            UUID                     PRIMARY KEY    ,
+  url           VARCHAR                  NOT NULL UNIQUE,
+  discovered_at TIMESTAMP WITH TIME ZONE NOT NULL       , 
+  last_crawled  TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 CREATE TABLE url_contents (

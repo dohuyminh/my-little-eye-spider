@@ -1,10 +1,21 @@
-add_library(db_adapters
+add_library(database
     postgresql_adapter.cpp
+    postgresql_work.cpp
+    postgresql_work_queue.cpp 
+    
+    models/url.cpp
+    models/url_contents.cpp 
+    models/url_metadata.cpp 
+    models/robots_txt.cpp
 )
 
 target_link_libraries(
-    db_adapters
-    libpqxx::pqxx
+    database
+    PUBLIC
+      concurrentqueue::concurrentqueue
+      libpqxx::pqxx
+      Boost::headers
+      cpp_dotenv
 )
 
-target_include_directories(db_adapters PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)
+target_include_directories(database PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/..)

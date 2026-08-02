@@ -2,9 +2,11 @@
 
 #include <atomic>
 #include <bit>
+#include <cstddef>
 #include <cstdlib>
 #include <new>
 #include <type_traits>
+#include <vector>
 
 namespace crawler::services::concurrency {
 
@@ -68,6 +70,35 @@ public:
     buffer_[readPtr & (capacity_ - 1)].~T();
     readPtr_.store(readPtr + 1, std::memory_order_release);
     return true;
+  }
+
+  std::vector<T> popBatch(std::size_t batchSize = static_cast<std::size_t>(-1))
+    requires (std::is_move_constructible_v<T> || std::is_copy_constructible_v<T>)
+  {
+    std::size_t readPtr = readPtr_.load(std::memory_order_relaxed);
+    if (empty(readPtr, cachedWritePtr_)) {
+      cachedWritePtr_ = writePtr_.load(std::memory_order_acquire);
+      if (empty(readPtr, cachedWritePtr_)) {
+        return {};
+      }
+    }
+
+    std::vector<T> res;
+    std::size_t size{cachedWritePtr_ - readPtr}, count{
+      batchSize == static_cast<std::size_t>(-1) ? 
+        size : 
+        std::min(batchSize, size)};
+    res.reserve(count);
+
+    for (std::size_t i{}; i < count; ++i) {
+      std::size_t idx{(readPtr + i) & (capacity_ - 1)};
+      res.emplace_back(std::move(buffer_[idx]));
+      buffer_[idx].~T();
+    }
+
+    readPtr_.store(readPtr_ + count, std::memory_order_release);
+
+    return res;
   }
 
   std::size_t capacity() const noexcept {
