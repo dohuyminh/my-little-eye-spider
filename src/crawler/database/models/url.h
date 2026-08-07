@@ -7,7 +7,7 @@
 
 namespace crawler::database {
   
-struct URL : PostgresModel {
+struct URL : public PostgresModel {
   
   const boost::uuids::uuid id;
   const std::string url;

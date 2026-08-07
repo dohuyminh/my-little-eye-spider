@@ -5,7 +5,7 @@
 
 namespace crawler::database {
 
-struct URLMetadata : PostgresModel { 
+struct URLMetadata : public PostgresModel { 
   
   const URL& url;
   std::string contentHash;

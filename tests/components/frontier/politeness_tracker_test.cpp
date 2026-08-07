@@ -6,10 +6,10 @@
 #include <atomic>
 #include <vector>
 
-#include "crawler/components/frontier/politeness_tracker.h"
+#include "crawler/setup/frontier/politeness_tracker.h"
 #include "crawler/types/url.h"
 
-namespace crawler::components {
+namespace crawler::setup {
 
 namespace {
 
@@ -162,7 +162,7 @@ TEST(PolitenessTrackerCrawlDelayTest, DifferentDomainsHaveIndependentDelays) {
   EXPECT_EQ(heirStatus2, DomainStatus::LOCKED);
 
   // Wait for craftbrewingbusiness.com delay (1 second) to pass
-  std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
   // After waiting, new request to craftbrewingbusiness.com should return ALLOWED (1 sec delay expired)
   types::URL craftBrewingUrl3{"https://www.craftbrewingbusiness.com/page3"};

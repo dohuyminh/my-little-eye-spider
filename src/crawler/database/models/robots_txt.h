@@ -6,7 +6,7 @@
 
 namespace crawler::database {
 
-struct RobotsTxtEntry : PostgresModel {
+struct RobotsTxtEntry : public PostgresModel {
 
   const boost::uuids::uuid id; 
   std::string domain;

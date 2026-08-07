@@ -1,77 +1,32 @@
-#include <curl/curl.h>
-
-#include <cstdlib>
-#include <format>
-#include <iostream>
-#include <stdexcept>
-#include <string>
-
-#include "crawler/services/html_downloader.h"
-#include "crawler/services/html_parser.h"
+#include <print>
 #include "crawler/types/url.h"
+#include "crawler/setup/frontier/politeness_tracker.h"
 
-#include "dotenv.h"
-
-using namespace crawler::services::html;
-using namespace crawler::services::curl;
-
-using namespace dotenv;
+using namespace crawler::types;
+using namespace crawler::setup;
 
 int main() {
-  // HTMLParser<LexborParser> parser;
-  // std::string url;
-  // do {
-  //   std::cout << "Insert a valid URL here:\n> ";
-  //
-  //   bool valid{false};
-  //   while (!valid) {
-  //     std::getline(std::cin, url);
-  //     try {
-  //       if (url != "x") {
-  //         crawler::types::URL{url};
-  //       }
-  //       valid = true;
-  //     } catch (std::invalid_argument const&) {
-  //       std::cerr << std::format(
-  //           "\"{}\" is not a valid URL; please try again\n", url);
-  //       std::cout << "> ";
-  //     }
-  //   }
-  //
-  //   if (url == "x") {
-  //     break;
-  //   }
-  //
-  //   ParseResult result;
-  //   try {
-  //     auto oURL{crawler::types::URL{url}};
-  //     std::cout << oURL.domain() << '\n';
-  //     Response resp{Downloader()(oURL)};
-  //     if (resp.code() != 200) {
-  //       std::cerr << std::format("[HTTP] GET method returned code {}\n",
-  //                                resp.code());
-  //       continue;
-  //     }
-  //     result = parser.parse(resp.content());
-  //   } catch (std::runtime_error const& e) {
-  //     std::cerr << std::format(
-  //         "[HTTP] cannot perform GET request on URL \"{}\"\n", url);
-  //     std::cerr << e.what() << '\n';
-  //     continue;
-  //   }
-  //
-  //   for (const auto& outlink : result.outlinks()) {
-  //     std::cout << std::format("[Outlink] {}\n", outlink);
-  //   }
-  //
-  // } while (url != "x");
-  //
   
-  env.load_dotenv("../.env", false, true);
+    // sleep for 10 seconds to ensure domain is actually free before running test
+  std::this_thread::sleep_for(std::chrono::seconds(1));
 
-  std::cout << env["POSTGRESQL_DB_HOST"] << '\n';
+  auto& tracker = PolitenessTracker::get();
 
-  std::cout << "Exiting Program...\n";
+  // First request to craftbrewingbusiness.com should return ALLOWED and lock the domain
+  URL url1{"https://www.craftbrewingbusiness.com/search"};
+  DomainStatus status1 = tracker.handleURL(url1);
+
+  // First request should be ALLOWED (triggers the lock + delay)
+
+  // Immediately check if domain is locked (using full hostname)
+
+  // Second request to same domain should return LOCKED
+  URL url2{"https://www.craftbrewingbusiness.com/page2"};
+  DomainStatus status2 = tracker.handleURL(url2);
+
+  std::println("{} {}", status1 == DomainStatus::ALLOWED, status2 == DomainStatus::LOCKED);
+ 
+  std::println("long: {}", sizeof(long));
 
   return 0;
-}
+} 

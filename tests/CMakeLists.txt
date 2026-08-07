@@ -24,6 +24,7 @@ target_link_libraries(
         GTest::gtest_main
         memory
         types
+        setup
         services
         components
         crawler

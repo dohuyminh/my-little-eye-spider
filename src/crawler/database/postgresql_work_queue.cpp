@@ -110,14 +110,14 @@ void PostgreSQLWorkQueue::logWork(std::shared_ptr<PostgresDatabaseWork> work) {
       {
         std::unique_lock<std::shared_mutex> writeLock{resourcesMutex_};
         if (!writeWorks_.count(tableName)) {
-          writeWorks_.emplace(work->tableName(), 1024uz);        
+          writeWorks_.emplace(tableName, 1024uz);        
         }
       }
     }
 
     {
       std::shared_lock<std::shared_mutex> readLock{resourcesMutex_};
-      writeWorks_[tableName].push(work);
+      writeWorks_.at(tableName).push(work);
     }
   }
 

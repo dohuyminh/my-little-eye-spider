@@ -5,7 +5,7 @@
 
 namespace crawler::database {
 
-struct URLContent : PostgresModel {
+struct URLContent : public PostgresModel {
 
   const URL& url;
   std::string compressedHTML;

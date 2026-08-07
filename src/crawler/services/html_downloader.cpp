@@ -33,10 +33,10 @@ curl::Response Downloader::operator()(const types::URL& url) {
         "CURL: performing GET request failed: {}", curl_easy_strerror(res)));
   }
 
-  curl::ResponseCode code;
+  long code = 0;
   curl_easy_getinfo(handler, CURLINFO_RESPONSE_CODE, &code);
 
-  return curl::Response(response, code);
+  return curl::Response(response, static_cast<curl::ResponseCode>(code));
 }
 
 size_t Downloader::writeCallback(void* contents, size_t size, size_t nmemb,

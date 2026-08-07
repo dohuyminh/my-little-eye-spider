@@ -6,6 +6,7 @@ add_library(database
     models/url.cpp
     models/url_contents.cpp 
     models/url_metadata.cpp 
+    models/url_outlinks.cpp
     models/robots_txt.cpp
 )
 

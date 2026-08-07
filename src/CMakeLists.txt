@@ -24,6 +24,7 @@ target_compile_options(
         -Wextra
         -Wpedantic
         -Werror
+        -Wno-interference-size
         -O3
         -g # REMOVE LATER
 )
@@ -33,6 +34,7 @@ target_link_libraries(
     memory
     crawler
     services
+    setup
     types
     
     # dotenv
