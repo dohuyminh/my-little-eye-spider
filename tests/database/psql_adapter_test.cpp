@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
+#include <exception>
 #include <format>
 #include <memory>
+#include <print>
 
 #include "crawler/database/postgresql_adapter.h"
 #include "dotenv.h"
@@ -69,7 +71,79 @@ private:
         dotenv::env["POSTGRESQL_DB_USERNAME"],
         dotenv::env["POSTGRESQL_DB_PASSWORD"]);
   }
+
 };
+
+class SingleThreadedSetting : public PSQLTestDatabase {
+protected:
+  
+  void SetUp() override final {
+    PSQLTestDatabase::SetUp();
+
+    auto status = adapter->execute(
+        "CREATE TABLE st_test_table ("
+        " id BIGINT PRIMARY KEY, "
+        " integer_val INT, " 
+        " string_val VARCHAR(225), "
+        " unique_int_val INT UNIQUE NOT NULL);", 
+        true);
+      
+    if (!status.has_value()) {
+      std::rethrow_exception(status.error());
+    }
+  } 
+  
+  void TearDown() override final {
+    auto status = adapter->execute("DROP TABLE st_test_table", true); 
+    if (!status.has_value()) {
+      std::rethrow_exception(status.error());
+    }
+    
+    PSQLTestDatabase::TearDown();
+  }
+};
+
+// Test adapter on single-threaded setting (1 writer + 1 reader)
+TEST_F(SingleThreadedSetting, TestAdapterForSingleThreadedSetting) {
+  
+  // valid writes
+  auto status1 = adapter->execute(
+      std::format("INSERT INTO st_test_table VALUES ({}, {}, '{}', {});", 
+        1, 10, "Hello", 2), 
+      true);
+  auto status2 = adapter->execute(
+      std::format("INSERT INTO st_test_table VALUES ({}, {}, '{}', {});", 
+        2, 20, "World", 3), 
+      true);
+
+  ASSERT_TRUE(status1.has_value());
+  ASSERT_TRUE(status2.has_value());
+  
+  EXPECT_TRUE(status1.value().affected_rows() == 1);
+  EXPECT_TRUE(status2.value().affected_rows() == 1);
+
+  // invalid writes 
+  auto invalidStatus = adapter->execute(
+      std::format("INSERT INTO st_test_table VALUES ({}, {}, '{}', {})", 
+        3, 30, "Invalid", 3), 
+      true);
+      
+  ASSERT_TRUE(!invalidStatus.has_value());
+
+  // single selects
+  auto readStatus1 = adapter->execute("SELECT * FROM st_test_table;");
+  auto readStatus2 = adapter->execute("SELECT * FROM st_test_table WHERE integer_val > 10;");
+
+  ASSERT_TRUE(readStatus1.has_value());
+  ASSERT_TRUE(readStatus2.has_value());
+
+  EXPECT_TRUE(readStatus1.value().size() == 2);
+  EXPECT_TRUE(readStatus2.value().size() == 1);
+}
+
+// Test adapter on multi-threaded setting (concurrent readers)
+// Test adapter on multi-threaded setting (concurrent writers; check for data integrity)
+// Test adapter on multi-threaded setting (concurrent writers + concurrent readers; check for data integrity)
 
 TEST_F(PSQLTestDatabase, dummy) {
 
