@@ -1,4 +1,4 @@
-find_package(Boost REQUIRED)
+find_package(Boost CONFIG REQUIRED)
 find_package(concurrentqueue REQUIRED)
 find_package(re2 REQUIRED)
 find_package(libidn2 REQUIRED)

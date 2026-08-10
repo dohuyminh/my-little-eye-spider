@@ -217,8 +217,11 @@ bool applyQueryComponent(
 bool validateFragmentComponent(std::string_view fragmentStr) {
   // Fragment can contain any characters that are valid in URLs
   // Per RFC 3986, fragment can be empty or contain pchar / "/" / "?"
-  // For now, we accept any non-empty fragment as valid
-  return std::all_of(fragmentStr.begin() + 1, fragmentStr.end(),
+  if (fragmentStr.empty()) {
+    return true;
+  }
+
+  return std::all_of(fragmentStr.begin(), fragmentStr.end(),
                      [](char c) { return isPChar(c) || c == '/' || c == '?'; });
 }
 

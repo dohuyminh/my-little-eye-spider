@@ -237,6 +237,11 @@ TEST(IsRelativeURLTest, FragmentWithSpecialChars) {
   EXPECT_TRUE(isRelativeURL(input));
 }
 
+TEST(IsRelativeURLTest, NoFragment) {
+  std::string_view input{"/page"};
+  EXPECT_TRUE(isRelativeURL(input));
+}
+
 // ============================================================================
 // parse tests
 // ============================================================================

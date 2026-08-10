@@ -62,9 +62,35 @@ const services::url::RobotsTxtRepr& PolitenessTracker::getRobotsTxt(
   return robotsTxtLookup_[fullHost];
 }
 
+void PolitenessTracker::setRobotsTxtProvider(RobotsTxtProvider provider) {
+  std::unique_lock<std::shared_mutex> lock(lockedDomainsMutex_);
+  robotsTxtProvider_ = std::move(provider);
+}
+
+void PolitenessTracker::resetRobotsTxtProvider() {
+  std::unique_lock<std::shared_mutex> lock(lockedDomainsMutex_);
+  robotsTxtProvider_ = nullptr;
+}
+
+void PolitenessTracker::clearLockedDomains() {
+  std::unique_lock<std::shared_mutex> lock(lockedDomainsMutex_);
+  lockedDomain_.clear();
+}
+
+void PolitenessTracker::clearRobotsTxtCache() {
+  std::unique_lock<std::shared_mutex> lock(lockedDomainsMutex_);
+  robotsTxtLookup_.clear();
+}
+
 DomainStatus PolitenessTracker::handleURL(const types::URL& url) {
   // get the robots.txt content for the URL's domain
-  const auto& robotsTxt{getRobotsTxt(url)};
+  services::url::RobotsTxtRepr robotsTxt;
+
+  if (robotsTxtProvider_) {
+    robotsTxt = robotsTxtProvider_(url);
+  } else {
+    robotsTxt = getRobotsTxt(url);
+  }
 
   std::string urlStr{url.to_string()};
   std::string fullHost{url.host()};

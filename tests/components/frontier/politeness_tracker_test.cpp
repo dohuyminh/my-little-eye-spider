@@ -13,6 +13,33 @@ namespace crawler::setup {
 
 namespace {
 
+using RobotsTxtRepr = crawler::services::url::RobotsTxtRepr;
+
+static RobotsTxtRepr createRobotsTxt(int crawlDelaySeconds = 0) {
+  RobotsTxtRepr robots;
+  robots["allow"] = nlohmann::json::array();
+  robots["disallow"] = nlohmann::json::array();
+  if (crawlDelaySeconds > 0) {
+    robots["crawl-delay"] = static_cast<double>(crawlDelaySeconds);
+  }
+  return robots;
+}
+
+static void configurePolitenessTrackerForDelayTests() {
+  auto& tracker = PolitenessTracker::get();
+  tracker.clearLockedDomains();
+  tracker.clearRobotsTxtCache();
+  tracker.setRobotsTxtProvider([](const types::URL& url) {
+    if (url.host() == "www.craftbrewingbusiness.com") {
+      return createRobotsTxt(1);
+    }
+    if (url.host() == "heir.arch.ox.ac.uk") {
+      return createRobotsTxt(10);
+    }
+    return createRobotsTxt(0);
+  });
+}
+
 // ============================================================================
 // Singleton behavior tests
 // ============================================================================
@@ -39,9 +66,7 @@ TEST(PolitenessTrackerDomainIsLockedTest, InitiallyNoDomainsLocked) {
 
 // Real domain: www.craftbrewingbusiness.com has Crawl-delay: 1 for multiple user-agents
 TEST(PolitenessTrackerCrawlDelayTest, DomainLockedAfterFirstRequestWithCrawlDelay) {
-
-  // sleep for 10 seconds to ensure domain is actually free before running test
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  configurePolitenessTrackerForDelayTests();
 
   auto& tracker = PolitenessTracker::get();
 
@@ -62,9 +87,7 @@ TEST(PolitenessTrackerCrawlDelayTest, DomainLockedAfterFirstRequestWithCrawlDela
 }
 
 TEST(PolitenessTrackerCrawlDelayTest, DomainReleasedAfterCrawlDelayExpires) {
-
-  // sleep for 10 seconds to ensure domain is actually free before running test
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  configurePolitenessTrackerForDelayTests();
 
   auto& tracker = PolitenessTracker::get();
 
@@ -91,9 +114,7 @@ TEST(PolitenessTrackerCrawlDelayTest, DomainReleasedAfterCrawlDelayExpires) {
 }
 
 TEST(PolitenessTrackerCrawlDelayTest, MultipleRequestsDuringLockPeriodStayBlocked) {
-
-  // sleep for 10 seconds to ensure domain is actually free before running test
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  configurePolitenessTrackerForDelayTests();
 
   auto& tracker = PolitenessTracker::get();
 
@@ -132,9 +153,7 @@ TEST(PolitenessTrackerCrawlDelayTest, MultipleRequestsDuringLockPeriodStayBlocke
 // This test verifies that the politeness tracker correctly handles domains
 // with different crawl delays (craftbrewing: 1s, heir.arch: 10s).
 TEST(PolitenessTrackerCrawlDelayTest, DifferentDomainsHaveIndependentDelays) {
-
-  // sleep for 10 seconds to ensure domain is actually free before running test
-  std::this_thread::sleep_for(std::chrono::seconds(10));
+  configurePolitenessTrackerForDelayTests();
 
   auto& tracker = PolitenessTracker::get();
 
@@ -188,9 +207,7 @@ TEST(PolitenessTrackerCrawlDelayTest, DifferentDomainsHaveIndependentDelays) {
 // ============================================================================
 
 TEST(PolitenessTrackerCrawlDelayTest, DomainLockDurationMatchesCrawlDelay) {
-
-  // sleep for 10 seconds to ensure domain is actually free before running test
-  std::this_thread::sleep_for(std::chrono::seconds(1));
+  configurePolitenessTrackerForDelayTests();
 
   auto& tracker = PolitenessTracker::get();
 

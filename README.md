@@ -54,7 +54,7 @@ While in the project's root directory:
 ```bash
 # install all dependencies listed in conanfile.py; 
 # replace "Release" with "Debug" if under development
-$ conan install . -pr ./conan_profile/project_profile -sbuild_type=Release -of=build --build=missing
+$ conan install . -pr ./conan_profile/project_profile -sbuild_type=Release -of=. --build=missing -o'boost/*:without_cobalt=True'
 
 $ cd build
 ```
@@ -99,7 +99,7 @@ To build and run the code:
 ``` bash
 # currently in build directory
 $ cmake .. \
-    -DCMAKE_TOOLCHAIN_FILE=build/Release/generators/conan_toolchain.cmake \
+    -DCMAKE_TOOLCHAIN_FILE=Release/generators/conan_toolchain.cmake \
     -DCMAKE_BUILD_TYPE=Release 
 
 $ cmake --build .

@@ -19,6 +19,12 @@ class PostgreSQLConnectionPool {
    public:
     ConnectionLease(pqxx::connection* conn, PostgreSQLConnectionPool& pool);
 
+    ConnectionLease(const ConnectionLease&) = delete;
+    void operator=(const ConnectionLease&)  = delete;
+
+    ConnectionLease(ConnectionLease&& other) = default;
+    ConnectionLease& operator=(ConnectionLease&& other) = delete;
+
     ~ConnectionLease();
 
     pqxx::connection& operator*() noexcept { return *conn_; }
@@ -32,6 +38,12 @@ class PostgreSQLConnectionPool {
 
   PostgreSQLConnectionPool(std::string_view connString,
                            std::size_t numConnections);
+
+  PostgreSQLConnectionPool(const PostgreSQLConnectionPool&) = delete;
+  void operator=(const PostgreSQLConnectionPool&) = delete;
+
+  PostgreSQLConnectionPool(PostgreSQLConnectionPool&&) = delete;
+  void operator=(PostgreSQLConnectionPool&&) = delete;
 
   ConnectionLease acquireConnection();
 

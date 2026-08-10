@@ -19,14 +19,18 @@ PostgreSQLConnectionPool::PostgreSQLConnectionPool(std::string_view connString,
         "connection");
   }
 
-  // check database connection's health
-  pqxx::connection healthCheckCon{connString.data()};
-  if (!healthCheckCon.is_open()) {
-    throw std::runtime_error("[PostgreSQLConnectionPool] Failed to connect to database");
-  }
-
-  for (std::size_t i{}; i < numConnections; ++i) {
-    connections_.push(std::make_unique<pqxx::connection>(connString.data()));
+  try {
+    // check database connection's health
+    pqxx::connection healthCheckCon{connString.data()};
+    if (!healthCheckCon.is_open()) {
+      throw std::runtime_error("[PostgreSQLConnectionPool] Failed to connect to database");
+    }
+  
+    for (std::size_t i{}; i < numConnections; ++i) {
+      connections_.push(std::make_unique<pqxx::connection>(connString.data()));
+    }
+  } catch (const std::exception& e) {
+    throw std::runtime_error("[PostgreSQLConnectionPool] Failed to initialize connection pool: " + std::string(e.what()));
   }
 }
 
