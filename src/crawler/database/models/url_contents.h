@@ -7,10 +7,10 @@ namespace crawler::database {
 
 struct URLContent : public PostgresModel {
 
-  const URL& url;
+  std::shared_ptr<const URL> url;
   std::string compressedHTML;
 
-  URLContent(const URL& url, std::string_view hashedContent);
+  URLContent(std::shared_ptr<const URL> url, std::string_view hashedContent);
 
   std::string postgresToTuple() const noexcept override;
 

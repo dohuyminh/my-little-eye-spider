@@ -42,8 +42,8 @@ public:
       std::string_view tableName, 
       std::initializer_list<std::string> filters);
 
-  std::span<std::string> filters() noexcept {
-    return std::span<std::string>{filters_};
+  std::span<const std::string> filters() noexcept {
+    return std::span<const std::string>{filters_};
   }
 
   std::string toSQLCommand() const noexcept override; 
@@ -72,7 +72,18 @@ private:
 
 
 class PostgresUpdateWork : public PostgresDatabaseWork {
+public:
 
+  PostgresUpdateWork(
+      std::string_view tableName, 
+      std::initializer_list<std::string> filters,
+      std::initializer_list<std::string> updateValues);
+
+  std::string toSQLCommand() const override;
+
+private:
+  std::vector<std::string> filters_;
+  std::vector<std::string> updateValues_;
 };
 
 

@@ -4,7 +4,7 @@
 namespace crawler::database {
 
 URLMetadata::URLMetadata(
-  const URL& url,
+  std::shared_ptr<const URL> url,
   std::string_view contentHash, 
   std::string_view simHash, 
   std::size_t contentLength
@@ -18,7 +18,7 @@ URLMetadata::URLMetadata(
 std::string URLMetadata::postgresToTuple() const noexcept {
 
   return std::format("({}, decode('{}', 'base64'), decode('{}', 'base64'), {})", 
-      boost::uuids::to_string(url.id),
+      boost::uuids::to_string(url->id),
       contentHash, 
       simHash, 
       contentLength

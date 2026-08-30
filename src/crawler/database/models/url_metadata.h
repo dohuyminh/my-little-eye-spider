@@ -7,13 +7,13 @@ namespace crawler::database {
 
 struct URLMetadata : public PostgresModel { 
   
-  const URL& url;
+  std::shared_ptr<const URL> url;
   std::string contentHash;
   std::string simHash;
   std::size_t contentLength;
 
   URLMetadata(
-      const URL& url, 
+      std::shared_ptr<const URL> url, 
       std::string_view contentHash, 
       std::string_view simHash, 
       std::size_t contentLength

@@ -7,10 +7,10 @@ namespace crawler::database {
   
 struct URLOutlink : public PostgresModel {
   
-  const URL& srcURL;
-  const URL& destURL;
+  std::shared_ptr<const URL> srcURL;
+  std::shared_ptr<const URL> destURL;
 
-  URLOutlink(const URL& srcURL, const URL& destURL);
+  URLOutlink(std::shared_ptr<const URL> srcURL, std::shared_ptr<const URL> destURL);
 
   std::string postgresToTuple() const noexcept override;
 
