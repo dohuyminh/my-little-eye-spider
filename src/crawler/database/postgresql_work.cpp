@@ -45,10 +45,9 @@ PostgresInsertWork::PostgresInsertWork(
 {
   // ensure all models are of the same type
   for (const Model& m: models_) {
-    auto& underlyingModel = getUnderlyingModel<PostgresModel>(m);
-    if (this->tableName() != underlyingModel.postgresCorrespondingTable()) {
+    if (this->tableName() != m->postgresCorrespondingTable()) {
       throw std::invalid_argument(std::format("[PostgresInsertWork] model with data {} is incompatible to insert to table \"{}\"", 
-            underlyingModel.postgresToTuple(), this->tableName()));
+            m->postgresToTuple(), this->tableName()));
     }
   }
 }
@@ -57,10 +56,9 @@ void PostgresInsertWork::insertRowIntoBatch(std::span<Model> models) {
   
   // ensure all models are of the same type
   for (const Model& m: models) {
-    auto& underlyingModel = getUnderlyingModel<PostgresModel>(m);
-    if (tableName() != underlyingModel.postgresCorrespondingTable()) {
+    if (tableName() != m->postgresCorrespondingTable()) {
       throw std::invalid_argument(std::format("[PostgresInsertWork] model with data {} is incompatible to insert to table \"{}\"", 
-            underlyingModel.postgresToTuple(), tableName()));
+            m->postgresToTuple(), tableName()));
     }
   }
 
@@ -76,7 +74,6 @@ std::string PostgresInsertWork::toSQLCommand() const {
 
   std::string cmd{std::format("INSERT INTO {} VALUES ", tableName())};
   for (std::size_t i{0}; i < models_.size(); ++i) {
-    cmd += getUnderlyingModel<PostgresModel>(models_[i]).postgresToTuple();
     if (i < models_.size() - 1) [[likely]] {
       cmd.push_back(',');
     }
