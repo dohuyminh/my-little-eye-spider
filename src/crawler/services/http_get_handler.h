@@ -11,7 +11,7 @@ namespace services {
 
 namespace html {
 
-class Downloader {
+class HTTPGETHandler {
  public:
   curl::Response operator()(const types::URL& url);
 

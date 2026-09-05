@@ -1,6 +1,6 @@
 #include "politeness_tracker.h"
 
-#include "services/html_downloader.h"
+#include "services/http_get_handler.h"
 #include "services/url.h"
 
 using RobotsTxtRepr = crawler::services::url::RobotsTxtRepr;
@@ -38,7 +38,7 @@ const services::url::RobotsTxtRepr& PolitenessTracker::getRobotsTxt(
   robotsUrl += "/robots.txt";
 
   // Fetch robots.txt
-  services::html::Downloader downloader;
+  services::html::HTTPGETHandler downloader;
   types::URL robotsTextUrl{robotsUrl};
   services::curl::Response response{downloader(robotsTextUrl)};
 

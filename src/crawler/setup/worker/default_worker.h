@@ -6,6 +6,7 @@
 #include "../frontier/default_front_selector.h"
 #include "../frontier/default_update_bus.h"
 #include "components/worker/worker.h"
+#include "setup/worker/url_insert.h"
 
 namespace crawler::setup {
 
@@ -21,6 +22,9 @@ class DefaultWorker : public components::Worker<DefaultFrontier> {
       DefaultFrontier& frontier);
 
   void doWork() override;
+
+ private:
+  static URLInserter inserter_; 
 };
 
 }  // namespace crawler::setup

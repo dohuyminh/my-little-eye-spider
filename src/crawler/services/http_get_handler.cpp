@@ -1,4 +1,4 @@
-#include "html_downloader.h"
+#include "http_get_handler.h"
 
 #include <format>
 
@@ -10,7 +10,7 @@ namespace services {
 
 namespace html {
 
-curl::Response Downloader::operator()(const types::URL& url) {
+curl::Response HTTPGETHandler::operator()(const types::URL& url) {
   // get thread's cURL handler to perform GET requests
   CURL* handler{curl::CURLEasyHandler::get().handler()};
   if (!handler) {
@@ -20,7 +20,7 @@ curl::Response Downloader::operator()(const types::URL& url) {
   // perform GET request
   std::string response;
   curl_easy_setopt(handler, CURLOPT_URL, url.to_string().c_str());
-  curl_easy_setopt(handler, CURLOPT_WRITEFUNCTION, &Downloader::writeCallback);
+  curl_easy_setopt(handler, CURLOPT_WRITEFUNCTION, &HTTPGETHandler::writeCallback);
   curl_easy_setopt(handler, CURLOPT_WRITEDATA, &response);
   curl_easy_setopt(handler, CURLOPT_TIMEOUT, 10L);
   curl_easy_setopt(handler, CURLOPT_FOLLOWLOCATION,
@@ -39,7 +39,7 @@ curl::Response Downloader::operator()(const types::URL& url) {
   return curl::Response(response, static_cast<curl::ResponseCode>(code));
 }
 
-size_t Downloader::writeCallback(void* contents, size_t size, size_t nmemb,
+size_t HTTPGETHandler::writeCallback(void* contents, size_t size, size_t nmemb,
                                  std::string* output) {
   size_t total{size * nmemb};
   output->append(static_cast<char*>(contents), total);

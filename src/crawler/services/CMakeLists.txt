@@ -4,7 +4,7 @@ add_library(
         url.cpp
         thread_pool.cpp
         coroutine_thread_pool.cpp
-        html_downloader.cpp
+        http_get_handler.cpp
         html_parser.cpp
         curl_response.cpp
         curl_handler.cpp
